@@ -89,13 +89,13 @@ public class Member extends BaseTimeEntity {
     public static Member createGeneral(
             String email,
             String encodedPassword,
+            Gender gender,
             String username,
             String nickname,
             String birthDate,
             String phoneNumber,
             Boolean agreedToTerms,
-            Boolean agreedToMarketing,
-            Gender gender
+            Boolean agreedToMarketing
     ) {
         return Member.builder()
                 .email(email)
@@ -111,29 +111,35 @@ public class Member extends BaseTimeEntity {
                 .build();
     }
 
-//    // 사업자
-//    public static Member createBusiness(
-//            String email,
-//            String encodedPassword,
-//            String username,
-//            String nickname,
-//            String birthDate,
-//            String phoneNumber,
-//            Boolean agreedToTerms,
-//            Boolean agreedToMarketing,
-//            Gender gender
-//    ) {
-//        return Member.builder()
-//                .email(email)
-//                .password(encodedPassword)
-//                .username(username)
-//                .nickname(nickname)
-//                .birthDate(birthDate)
-//                .phoneNumber(phoneNumber)
-//                .agreedToTerms(agreedToTerms)
-//                .agreedToMarketing(agreedToMarketing)
-//                .gender(gender)
-//                .role(Role.GENERAL)
-//                .build();
-//    }
+    // 사업자
+    public static Member createBusiness(
+            String email,
+            String encodedPassword,
+            Gender gender,
+            String username,
+            String nickname,
+            String zipcode,
+            String address,
+            String detailAddress,
+            String birthDate,
+            String phoneNumber,
+            Boolean agreedToTerms,
+            Boolean agreedToMarketing
+    ) {
+        return Member.builder()
+                .email(email)
+                .password(encodedPassword)
+                .username(username)
+                .nickname(nickname)
+                .zipcode(zipcode)
+                .address(address)
+                .detailAddress(detailAddress)
+                .birthDate(birthDate)
+                .phoneNumber(phoneNumber)
+                .agreedToTerms(agreedToTerms)
+                .agreedToMarketing(agreedToMarketing)
+                .gender(gender)
+                .role(Role.GENERAL)
+                .build();
+    }
 }

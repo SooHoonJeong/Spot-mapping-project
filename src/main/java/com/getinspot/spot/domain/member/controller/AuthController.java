@@ -1,5 +1,6 @@
 package com.getinspot.spot.domain.member.controller;
 
+import com.getinspot.spot.domain.member.dto.BusinessRegisterRequest;
 import com.getinspot.spot.domain.member.dto.GeneralRegisterRequest;
 import com.getinspot.spot.domain.member.entity.Member;
 import com.getinspot.spot.domain.member.service.MemberService;
@@ -22,6 +23,12 @@ public class AuthController {
     @PostMapping("/register/general")
     public ResponseEntity<String> register(@Valid @RequestBody GeneralRegisterRequest request) {
         memberService.registerGeneral(request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PostMapping("/register/business")
+    public ResponseEntity<String> register(@Valid @RequestBody BusinessRegisterRequest request) {
+        memberService.registerBusiness(request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

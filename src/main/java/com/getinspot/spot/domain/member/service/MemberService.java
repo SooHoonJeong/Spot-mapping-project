@@ -1,8 +1,10 @@
 package com.getinspot.spot.domain.member.service;
 
+import com.getinspot.spot.domain.member.dto.BusinessRegisterRequest;
 import com.getinspot.spot.domain.member.dto.GeneralRegisterRequest;
 import com.getinspot.spot.domain.member.entity.Gender;
 import com.getinspot.spot.domain.member.entity.Member;
+import com.getinspot.spot.domain.member.entity.Role;
 import com.getinspot.spot.domain.member.repository.MemberRepository;
 import com.getinspot.spot.global.error.ErrorCode;
 import com.getinspot.spot.global.error.exception.BusinessException;
@@ -40,13 +42,46 @@ public class MemberService {
         Member member = Member.createGeneral(
                 request.getEmail(),
                 encodedPassword,
+                request.getGender(),
                 request.getUsername(),
                 request.getNickname(),
                 request.getBirthDate(),
                 request.getPhoneNumber(),
                 request.getAgreedToTerms(),
-                request.getAgreedToMarketing(),
-                request.getGender()
+                request.getAgreedToMarketing()
+        );
+
+        memberRepository.save(member);
+    }
+
+    @Transactional
+    public void registerBusiness(BusinessRegisterRequest request) {
+        log.info("사업자 회원가입 요청 - email: {}", request.getEmail());
+
+        // 이메일 중복 체크
+        if(memberRepository.existsByEmail(request.getEmail())) {
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+        }
+
+        // 핸드폰 번호 중복 체크
+        if (memberRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+            throw new BusinessException(ErrorCode.DUPLICATE_PHONE_NUMBER);
+        }
+
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        Member member = Member.createBusiness(
+                request.getEmail(),
+                encodedPassword,
+                request.getGender(),
+                request.getUsername(),
+                request.getNickname(),
+                request.getZipcode(),
+                request.getAddress(),
+                request.getDetailAddress(),
+                request.getBirthDate(),
+                request.getPhoneNumber(),
+                request.getAgreedToTerms(),
+                request.getAgreedToMarketing()
         );
 
         memberRepository.save(member);

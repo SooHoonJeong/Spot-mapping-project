@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class GeneralRegisterRequest {
+public class BusinessRegisterRequest {
 
     @NotBlank(message = "이메일은 필수입니다.")
     @Pattern(regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$", message = "이메일 형식이 올바르지 않습니다.")
@@ -27,8 +27,17 @@ public class GeneralRegisterRequest {
     @NotBlank(message = "이름은 필수입니다.")
     private String username;
 
-    @NotBlank(message = "닉네임은 필수입니다.")
+    @NotBlank(message = "닉네임은 필수입니다")
     private String nickname;
+
+    @NotBlank(message = "우편번호는 필수입니다.")
+    private String zipcode;
+
+    @NotBlank(message = "주소는 필수입니다.")
+    private String address;
+
+    @NotBlank(message = "상세주소는 필수입니다.")
+    private String detailAddress;
 
     @NotBlank(message = "생년월일은 필수입니다.")
     @Pattern(regexp = "^\\d{8}$", message = "생년월일은 하이픈(-) 없이 8자리 숫자로 입력해야 합니다. (예: 20001010)")
