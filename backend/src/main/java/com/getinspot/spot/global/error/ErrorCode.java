@@ -10,6 +10,8 @@ public enum ErrorCode {
 
     // 400 BAD_REQUEST: 잘못된 요청
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
+    EXPIRED_AUTH_CODE(HttpStatus.BAD_REQUEST, "인증 시간이 만료되었습니다. 다시 시도해주세요."),
+    INVALID_AUTH_CODE(HttpStatus.BAD_REQUEST, "인증번호가 일치하지 않습니다."),
 
     // 409 CONFLICT: 중복 리소스
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
