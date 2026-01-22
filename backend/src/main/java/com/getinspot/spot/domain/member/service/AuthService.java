@@ -49,4 +49,48 @@ public class AuthService {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD);
         }
     }
+
+    @Transactional
+    public TokenResponse reissue(String refreshToken) {
+        // Refresh Token 검증 (만료 여부, 위조 여부)
+        if (!tokenProvider.validateToken(refreshToken)) {
+            log.warn("토큰 재발급 실패: 유효하지 않은 Refresh Token입니다.");
+            throw new BusinessException(ErrorCode.EXPIRED_AUTH_CODE); // "다시 로그인하세요" 의미
+        }
+
+        // 토큰에서 유저 정보(Email) 추출
+        Authentication authentication = tokenProvider.getAuthentication(refreshToken);
+        String email = authentication.getName();
+
+        log.info("토큰 재발급 요청 진입 - Email: [{}]", email);
+
+        // Redis에서 해당 유저의 Refresh Token 가져오기
+        String redisRefreshToken = redisService.getData("RT:" + email);
+
+        // Redis에 없거나(로그아웃됨), 쿠키의 토큰과 일치하지 않으면 실패
+        if (redisRefreshToken == null) {
+            log.warn("토큰 재발급 실패: Redis에 저장된 토큰이 없습니다. (만료/로그아웃) - Email: [{}]", email);
+            throw new BusinessException(ErrorCode.INVALID_AUTH_CODE);
+        }
+
+        if (!redisRefreshToken.equals(refreshToken)) {
+            log.warn("토큰 재발급 실패: 토큰 정보가 일치하지 않습니다. (토큰 탈취 의심) - Email: [{}]", email);
+            throw new BusinessException(ErrorCode.INVALID_AUTH_CODE);
+        }
+
+
+        TokenResponse tokenDto = tokenProvider.generateToken(authentication);
+
+        log.info("Access Token 재발급 성공 - Email: [{}]", email);
+
+        // 중요: 우리는 Refresh Token Rotation(RTR)을 안 하고 기존 걸 유지할 것이므로
+        // DTO에 새 AccessToken만 담아서 리턴하면 됨.
+        // (참고: tokenProvider가 매번 RefreshToken도 새로 찍어내긴 할 텐데,
+        //  DB/Redis 업데이트 안 하고 그냥 버리면 기존 것 유지됨)
+
+        return TokenResponse.builder()
+                .accessToken(tokenDto.getAccessToken())
+                .refreshToken(null) // 쿠키 업데이트 안 함
+                .build();
+    }
 }

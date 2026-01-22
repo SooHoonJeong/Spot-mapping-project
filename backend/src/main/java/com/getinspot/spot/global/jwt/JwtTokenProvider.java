@@ -63,6 +63,8 @@ public class JwtTokenProvider {
 
         Date refreshTokenExpiresAt = new Date(now + refreshTokenExpireMs);
         String refreshToken = Jwts.builder()
+                .setSubject(authentication.getName())
+                .claim(AUTHORITIES_KEY, authorities)
                 .setIssuedAt(new Date(now))
                 .setExpiration(refreshTokenExpiresAt)
                 .signWith(key, SignatureAlgorithm.HS512)
@@ -85,6 +87,7 @@ public class JwtTokenProvider {
             throw new JwtException("권한 정보가 없는 토큰입니다.");
         }
 
+        // 권한 문자열을 객체로 변환(예: ROLE_USER,ROLE_ADMIN)
         Collection<? extends GrantedAuthority> authorities =
                 Arrays.stream(authClaim.split(","))
                         .map(SimpleGrantedAuthority::new)

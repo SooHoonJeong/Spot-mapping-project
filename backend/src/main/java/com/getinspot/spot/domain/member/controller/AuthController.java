@@ -1,7 +1,9 @@
 package com.getinspot.spot.domain.member.controller;
 
 import com.getinspot.spot.domain.member.dto.*;
-import com.getinspot.spot.domain.member.entity.Member;
+import com.getinspot.spot.global.error.ErrorCode;
+import com.getinspot.spot.global.error.exception.BusinessException;
+import org.springframework.web.bind.annotation.CookieValue;
 import com.getinspot.spot.domain.member.service.AuthService;
 import com.getinspot.spot.domain.member.service.MailService;
 import com.getinspot.spot.domain.member.service.MemberService;
@@ -65,5 +67,19 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
                 .body(ApiResponse.success("로그인에 성공했습니다." ,response));
+    }
+
+    @PostMapping("/reissue")
+    public ResponseEntity<ApiResponse<TokenResponse>> reissue(
+            @CookieValue(name = "refreshToken", required = false) String refreshToken) {
+
+        // 쿠키에 토큰이 없을 경우 예외 처리
+        if (refreshToken == null) {
+            // 혹은 커스텀 예외 (ex: REFRESH_TOKEN_NOT_FOUND)
+            throw new BusinessException(ErrorCode.INVALID_AUTH_CODE);
+        }
+
+        TokenResponse response = authService.reissue(refreshToken);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
