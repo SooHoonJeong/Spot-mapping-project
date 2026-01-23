@@ -60,7 +60,7 @@ public class AuthController {
                 .path("/")
                 .httpOnly(true)
                 .secure(false)          // HTTPS에서만 전송 (로컬 http 테스트 시 false로 변경)
-                .sameSite("None")      // 크로스 사이트 요청 허용 (secure(true)와 세트)
+                .sameSite("None")       // 크로스 사이트 요청 허용 (secure(true)와 세트)
                 .maxAge(7 * 24 * 60 * 60)
                 .build();
 

@@ -4,13 +4,13 @@ import com.getinspot.spot.domain.member.dto.*;
 import com.getinspot.spot.domain.member.entity.Member;
 import com.getinspot.spot.domain.member.repository.MemberRepository;
 import com.getinspot.spot.global.common.service.RedisService;
-import com.getinspot.spot.global.error.ErrorCode; // [추가]
-import com.getinspot.spot.global.error.exception.BusinessException; // [추가]
+import com.getinspot.spot.global.error.ErrorCode;
+import com.getinspot.spot.global.error.exception.BusinessException;
 import com.getinspot.spot.global.jwt.JwtTokenProvider;
 import com.getinspot.spot.global.util.MaskingUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.BadCredentialsException; // [추가]
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
