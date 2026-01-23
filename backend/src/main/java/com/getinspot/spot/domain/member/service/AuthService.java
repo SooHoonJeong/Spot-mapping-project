@@ -1,19 +1,24 @@
 package com.getinspot.spot.domain.member.service;
 
-import com.getinspot.spot.domain.member.dto.TokenResponse;
-import com.getinspot.spot.domain.member.dto.LoginRequest;
+import com.getinspot.spot.domain.member.dto.*;
+import com.getinspot.spot.domain.member.entity.Member;
+import com.getinspot.spot.domain.member.repository.MemberRepository;
 import com.getinspot.spot.global.common.service.RedisService;
 import com.getinspot.spot.global.error.ErrorCode; // [추가]
 import com.getinspot.spot.global.error.exception.BusinessException; // [추가]
 import com.getinspot.spot.global.jwt.JwtTokenProvider;
+import com.getinspot.spot.global.util.MaskingUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException; // [추가]
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -23,6 +28,9 @@ public class AuthService {
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final JwtTokenProvider tokenProvider;
     private final RedisService redisService;
+    private final MailService mailService;
+    private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public TokenResponse login(LoginRequest request) {
@@ -83,14 +91,78 @@ public class AuthService {
 
         log.info("Access Token 재발급 성공 - Email: [{}]", email);
 
-        // 중요: 우리는 Refresh Token Rotation(RTR)을 안 하고 기존 걸 유지할 것이므로
-        // DTO에 새 AccessToken만 담아서 리턴하면 됨.
-        // (참고: tokenProvider가 매번 RefreshToken도 새로 찍어내긴 할 텐데,
-        //  DB/Redis 업데이트 안 하고 그냥 버리면 기존 것 유지됨)
-
         return TokenResponse.builder()
                 .accessToken(tokenDto.getAccessToken())
                 .refreshToken(null) // 쿠키 업데이트 안 함
                 .build();
+    }
+
+    @Transactional
+    public void sendPasswordResetCode(PasswordResetCodeRequest request) {
+        String maskedEmail = MaskingUtil.maskEmail(request.getEmail());
+        String maskedName = MaskingUtil.maskName(request.getUsername());
+
+        Member member = memberRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (!member.getUsername().equals(request.getUsername())) {
+            log.warn("비밀번호 재설정 요청 실패 (이름 불일치) - Email: [{}], 요청이름: [{}]", maskedEmail, maskedName);
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+
+        String authCode = mailService.createCode();
+
+        String title = "[Spot] 비밀번호 재설정 인증번호 안내";
+        String content = "<h1>비밀번호 재설정</h1>" +
+                "<br/>" +
+                "<p>아래 인증번호를 입력하여 비밀번호를 재설정해주세요.</p>" +
+                "<h3> CODE : " + authCode + "</h3>" +
+                "<br/>" +
+                "<p>이 인증번호는 3분간 유효합니다.</p>";
+
+        mailService.sendEmail(request.getEmail(), title, content);
+
+        redisService.setDataExpire("ResetCode:" + request.getEmail(), authCode, 60 * 3L); // 3분
+
+        log.info("비밀번호 재설정 코드 발송 완료 - Email: [{}]", maskedEmail);
+    }
+
+    @Transactional
+    public String verifyCode(CodeVerificationRequest request) {
+        String codeKey = "ResetCode:" + request.getEmail();
+        String savedCode = redisService.getData(codeKey);
+
+        if (savedCode == null || !savedCode.equals(request.getCode())) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_CODE);
+        }
+
+        String resetToken = UUID.randomUUID().toString();
+
+        redisService.setDataExpire("ResetToken:" + request.getEmail(), resetToken, 60 * 10L);
+
+        redisService.deleteData(codeKey);
+
+        return resetToken;
+    }
+
+    @Transactional
+    public void resetPassword(PasswordResetRequest request) {
+        String tokenKey = "ResetToken:" + request.getEmail();
+        String savedToken = redisService.getData(tokenKey);
+
+        if (savedToken == null || !savedToken.equals(request.getResetToken())) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_CODE);
+        }
+
+        Member member = memberRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        member.updatePassword(passwordEncoder.encode(request.getNewPassword()));
+
+        // 사용한 토큰 삭제
+        redisService.deleteData(tokenKey);
+
+        // 기존 로그인 세션 모두 만료 처리
+        redisService.deleteData("RT:" + request.getEmail());
     }
 }

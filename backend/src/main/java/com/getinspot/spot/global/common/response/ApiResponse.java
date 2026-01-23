@@ -20,11 +20,6 @@ public class ApiResponse<T> {
         return new ApiResponse(true, "요청에 성공하였습니다.", data);
     }
 
-    // 성공 응답 (data가 없고 메시지가 있음)
-    public static <T> ApiResponse<T> success(String message) {
-        return new ApiResponse(true, message, null);
-    }
-
     public static <T> ApiResponse<T> success(String message, T data) {
         return new ApiResponse(true, message, data);
     }

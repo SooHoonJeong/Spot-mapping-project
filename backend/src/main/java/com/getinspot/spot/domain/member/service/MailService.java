@@ -25,10 +25,20 @@ public class MailService {
 
     private static final long EXPIRE_TIME = 300; // 5분
 
+    // 회원가입용
     public EmailSendResponse sendEmail(String email) {
         String code = createCode();
+
+        String subject = "[GetInSpot] 이메일 인증번호입니다.";
+        String content = "<h1>이메일 인증</h1>" +
+                "<br/>" +
+                "<p>아래 인증번호를 입력해주세요.</p>" +
+                "<h3> CODE : " + code + "</h3>" +
+                "<br/>" +
+                "<p>이 인증번호는 5분간 유효합니다.</p>";
+
         try {
-            MimeMessage message = createEmailForm(email, code);
+            MimeMessage message = createEmailForm(email, subject, content);
             javaMailSender.send(message);
         } catch (MessagingException e) {
             log.error("이메일 전송 실패: {}", e.getMessage());
@@ -44,26 +54,30 @@ public class MailService {
                 .build();
     }
 
-    private MimeMessage createEmailForm(String email, String code) throws MessagingException {
+    // 범용 이메일 전송
+    public void sendEmail(String toEmail, String title, String content) {
+        try {
+            MimeMessage message = createEmailForm(toEmail, title, content);
+            javaMailSender.send(message);
+            log.info("이메일 전송 성공 (범용) - email: {}", toEmail);
+        } catch (MessagingException e) {
+            log.error("이메일 전송 실패: {}", e.getMessage());
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private MimeMessage createEmailForm(String email, String subject, String text) throws MessagingException {
         MimeMessage message = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
         helper.setTo(email);
-        helper.setSubject("[GetInSpot] 이메일 인증번호입니다.");
-
-        String text = "<h1>이메일 인증</h1>" +
-                "<br/>" +
-                "<p>아래 인증번호를 입력해주세요.</p>" +
-                "<h3> CODE : " + code + "</h3>" +
-                "<br/>" +
-                "<p>이 인증번호는 5분간 유효합니다.</p>";
-
-        helper.setText(text, true);
+        helper.setSubject(subject); // 파라미터 사용
+        helper.setText(text, true); // 파라미터 사용
 
         return message;
     }
 
-    private String createCode() {
+    protected String createCode() {
         Random random = new Random();
         StringBuilder key = new StringBuilder();
         for (int i = 0; i < 6; i++) {

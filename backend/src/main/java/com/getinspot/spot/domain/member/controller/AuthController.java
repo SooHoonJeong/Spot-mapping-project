@@ -47,9 +47,9 @@ public class AuthController {
     }
 
     @PostMapping("/email/verify")
-    public ResponseEntity<ApiResponse<Void>> verifyEmail(@Valid @RequestBody EmailVerificationRequest request) {
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(@Valid @RequestBody CodeVerificationRequest request) {
         mailService.verifyEmail(request.getEmail(), request.getCode());
-        return ResponseEntity.ok(ApiResponse.success("이메일 인증이 완료되었습니다."));
+        return ResponseEntity.ok(ApiResponse.success("이메일 인증이 완료되었습니다.", null));
     }
 
     @PostMapping("/login")
@@ -81,5 +81,29 @@ public class AuthController {
 
         TokenResponse response = authService.reissue(refreshToken);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/find-id")
+    public ResponseEntity<ApiResponse<FindEmailResponse>> findEmail(@Valid @RequestBody FindEmailRequest request) {
+        FindEmailResponse response = memberService.findEmail(request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/password/send")
+    public ResponseEntity<ApiResponse<Void>> sendPasswordResetCode(@Valid @RequestBody PasswordResetCodeRequest request) {
+        authService.sendPasswordResetCode(request);
+        return ResponseEntity.ok(ApiResponse.success("인증코드가 이메일로 발송되었습니다.",null));
+    }
+
+    @PostMapping("/password/verify-code")
+    public ResponseEntity<ApiResponse<String>> verifyCode(@Valid @RequestBody CodeVerificationRequest request) {
+        String resetToken = authService.verifyCode(request);
+        return ResponseEntity.ok(ApiResponse.success(resetToken));
+    }
+
+    @PostMapping("/password/reset")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

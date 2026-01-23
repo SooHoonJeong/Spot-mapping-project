@@ -142,4 +142,8 @@ public class Member extends BaseTimeEntity {
                 .role(Role.GENERAL)
                 .build();
     }
+
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }
