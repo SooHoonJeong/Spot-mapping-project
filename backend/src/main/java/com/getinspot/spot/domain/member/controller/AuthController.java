@@ -1,23 +1,19 @@
 package com.getinspot.spot.domain.member.controller;
 
 import com.getinspot.spot.domain.member.dto.*;
-import com.getinspot.spot.global.error.ErrorCode;
-import com.getinspot.spot.global.error.exception.BusinessException;
-import org.springframework.web.bind.annotation.CookieValue;
 import com.getinspot.spot.domain.member.service.AuthService;
 import com.getinspot.spot.domain.member.service.MailService;
 import com.getinspot.spot.domain.member.service.MemberService;
 import com.getinspot.spot.global.common.response.ApiResponse;
+import com.getinspot.spot.global.error.ErrorCode;
+import com.getinspot.spot.global.error.exception.BusinessException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")

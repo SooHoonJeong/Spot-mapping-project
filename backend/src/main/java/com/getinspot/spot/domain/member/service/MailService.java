@@ -13,6 +13,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
+import java.time.Year;
 import java.util.Random;
 
 @Slf4j
@@ -40,12 +41,6 @@ public class MailService {
             log.error("이메일 전송 실패: {}", e.getMessage());
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
-
-//        LocalDateTime now = LocalDateTime.now();
-//        return EmailSendResponse.builder()
-//                .sentAt(now)
-//                .expireAt(now.plusSeconds(EXPIRE_TIME))
-//                .build();
     }
 
     private MimeMessage createEmailForm(String email, String subject, String text)
@@ -97,6 +92,8 @@ public class MailService {
     }
 
     private String createEmailHtml(String title, String message, String code) {
+        int year = Year.now().getValue();
+
         return """
         <!DOCTYPE html>
         <html lang="ko">
@@ -152,7 +149,7 @@ public class MailService {
                                         본 메일은 발신 전용이며 회신되지 않습니다.
                                     </p>
                                     <p style="margin: 0; color: #bbbbbb; font-size: 11px;">
-                                        © 2026 GetinSpot. All Rights Reserved.
+                                        © %d GetinSpot. All Rights Reserved.
                                     </p>
                                 </td>
                             </tr>
@@ -162,6 +159,6 @@ public class MailService {
             </table>
         </body>
         </html>
-        """.formatted(title, title, message, code);
+        """.formatted(title, title, message, code, year);
     }
 }
