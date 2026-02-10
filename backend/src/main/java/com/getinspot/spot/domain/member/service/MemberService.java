@@ -6,6 +6,7 @@ import com.getinspot.spot.domain.member.dto.FindEmailResponse;
 import com.getinspot.spot.domain.member.dto.GeneralRegisterRequest;
 import com.getinspot.spot.domain.member.entity.Member;
 import com.getinspot.spot.domain.member.repository.MemberRepository;
+import com.getinspot.spot.global.common.service.RedisService;
 import com.getinspot.spot.global.error.ErrorCode;
 import com.getinspot.spot.global.error.exception.BusinessException;
 import com.getinspot.spot.global.util.MaskingUtil;
@@ -22,11 +23,18 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RedisService redisService;
 
     // 일반 사용자의 회원가입 로직
     @Transactional
     public void registerGeneral(GeneralRegisterRequest request) {
         log.info("일반 회원가입 요청 - email: {}", request.getEmail());
+
+        String isVerified = redisService.getData("SignupCode:Verified:" + request.getEmail());
+
+        if (isVerified == null || !"VERIFIED".equals(isVerified)) {
+            throw new BusinessException(ErrorCode.UNVERIFIED_EMAIL); // "이메일 인증이 필요합니다"
+        }
 
         // 이메일 중복 체크
         if (memberRepository.existsByEmail(request.getEmail())) {
@@ -53,11 +61,18 @@ public class MemberService {
         );
 
         memberRepository.save(member);
+        redisService.deleteData("SignupCode:Verified:" + request.getEmail());
     }
 
     @Transactional
     public void registerBusiness(BusinessRegisterRequest request) {
         log.info("사업자 회원가입 요청 - email: {}", request.getEmail());
+
+        String isVerified = redisService.getData("SignupCode:Verified:" + request.getEmail());
+
+        if (isVerified == null || !"VERIFIED".equals(isVerified)) {
+            throw new BusinessException(ErrorCode.UNVERIFIED_EMAIL); // "이메일 인증이 필요합니다"
+        }
 
         // 이메일 중복 체크
         if(memberRepository.existsByEmail(request.getEmail())) {
@@ -86,7 +101,10 @@ public class MemberService {
         );
 
         memberRepository.save(member);
+        redisService.deleteData("SignupCode:Verified:" + request.getEmail());
     }
+
+
 
     @Transactional(readOnly = true)
     public FindEmailResponse findEmail(FindEmailRequest request) {

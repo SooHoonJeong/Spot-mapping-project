@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Slf4j
@@ -31,6 +32,38 @@ public class AuthService {
     private final MailService mailService;
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private static final long EMAIL_EXPIRATION = 60 * 3L; // 5분
+
+    @Transactional
+    public EmailSendResponse sendSignupCode(String email) {
+        if (memberRepository.existsByEmail(email)) {
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+        }
+
+        String authCode = mailService.sendEmail(
+                email,
+                "[GetinSpot] 회원가입 인증번호 안내",
+                "이메일 인증 안내",
+                "본인 확인을 위해 아래의 인증 번호를 입력해 주세요."
+        );
+
+        redisService.setDataExpire("SignupCode:" + email, authCode, EMAIL_EXPIRATION);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        return EmailSendResponse.builder()
+                .sentAt(now)
+                .expireAt(now.plusSeconds(EMAIL_EXPIRATION))
+                .build();
+    }
+
+    @Transactional
+    public void verifySignup(String email, String code) {
+        mailService.verifyEmail("SignupCode:" + email, code);
+
+        redisService.setDataExpire("SignupCode:Verified:" + email, "VERIFIED", 1800L);
+    }
 
     @Transactional
     public TokenResponse login(LoginRequest request) {
@@ -110,25 +143,20 @@ public class AuthService {
             throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
-        String authCode = mailService.createCode();
+        String code = mailService.sendEmail(
+                request.getEmail(),
+                "[GetinSpot] 비밀번호 재설정 인증번호 안내",
+                "비밀번호 재설정",
+                "아래 인증번호를 입력하여 비밀번호를 재설정해주세요."
+                );
 
-        String title = "[Spot] 비밀번호 재설정 인증번호 안내";
-        String content = "<h1>비밀번호 재설정</h1>" +
-                "<br/>" +
-                "<p>아래 인증번호를 입력하여 비밀번호를 재설정해주세요.</p>" +
-                "<h3> CODE : " + authCode + "</h3>" +
-                "<br/>" +
-                "<p>이 인증번호는 3분간 유효합니다.</p>";
-
-        mailService.sendEmail(request.getEmail(), title, content);
-
-        redisService.setDataExpire("ResetCode:" + request.getEmail(), authCode, 60 * 3L); // 3분
+        redisService.setDataExpire("ResetCode:" + request.getEmail(), code, EMAIL_EXPIRATION);
 
         log.info("비밀번호 재설정 코드 발송 완료 - Email: [{}]", maskedEmail);
     }
 
     @Transactional
-    public String verifyCode(CodeVerificationRequest request) {
+    public String verifyPasswordResetCode(CodeVerificationRequest request) {
         String codeKey = "ResetCode:" + request.getEmail();
         String savedCode = redisService.getData(codeKey);
 

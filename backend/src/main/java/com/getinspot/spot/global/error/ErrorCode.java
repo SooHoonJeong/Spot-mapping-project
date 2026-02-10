@@ -14,6 +14,9 @@ public enum ErrorCode {
     INVALID_AUTH_CODE(HttpStatus.BAD_REQUEST, "인증번호가 일치하지 않습니다."),
     INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
 
+    // 401 Unauthorized: 자격 증명 없음
+    UNVERIFIED_EMAIL(HttpStatus.UNAUTHORIZED, "이메일 인증이 완료되지 않았습니다."),
+
     // 404 NOT_FOUND: 리소스 없음
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."),
 

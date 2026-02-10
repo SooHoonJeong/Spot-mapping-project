@@ -42,13 +42,13 @@ public class AuthController {
 
     @PostMapping("/email/send")
     public ResponseEntity<ApiResponse<EmailSendResponse>> sendEmail(@Valid @RequestBody EmailRequest request) {
-        EmailSendResponse response = mailService.sendEmail(request.getEmail());
+        EmailSendResponse response = authService.sendSignupCode(request.getEmail());
         return ResponseEntity.ok(ApiResponse.success("인증번호가 이메일로 발송되었습니다.", response));
     }
 
     @PostMapping("/email/verify")
     public ResponseEntity<ApiResponse<Void>> verifyEmail(@Valid @RequestBody CodeVerificationRequest request) {
-        mailService.verifyEmail(request.getEmail(), request.getCode());
+        authService.verifySignup(request.getEmail(), request.getCode());
         return ResponseEntity.ok(ApiResponse.success("이메일 인증이 완료되었습니다.", null));
     }
 
@@ -97,7 +97,7 @@ public class AuthController {
 
     @PostMapping("/password/verify-code")
     public ResponseEntity<ApiResponse<String>> verifyCode(@Valid @RequestBody CodeVerificationRequest request) {
-        String resetToken = authService.verifyCode(request);
+        String resetToken = authService.verifyPasswordResetCode(request);
         return ResponseEntity.ok(ApiResponse.success(resetToken));
     }
 
