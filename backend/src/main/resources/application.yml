@@ -3,6 +3,8 @@ spring:
     name: spot
   profiles:
     active: dev
+  config:
+    import: optional:file:.env[.properties]
 
   mail:
     host: smtp.gmail.com
@@ -14,6 +16,18 @@ spring:
           starttls:
             enable: true
             required: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus, health, info
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: spot-backend
 
 
 encrypt:
