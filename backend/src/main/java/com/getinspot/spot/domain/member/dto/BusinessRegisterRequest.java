@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
+// [폐기 예정]
 public class BusinessRegisterRequest {
 
     @NotBlank(message = "이메일은 필수입니다.")

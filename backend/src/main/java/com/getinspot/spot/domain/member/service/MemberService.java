@@ -1,6 +1,5 @@
 package com.getinspot.spot.domain.member.service;
 
-import com.getinspot.spot.domain.member.dto.BusinessRegisterRequest;
 import com.getinspot.spot.domain.member.dto.FindEmailRequest;
 import com.getinspot.spot.domain.member.dto.FindEmailResponse;
 import com.getinspot.spot.domain.member.dto.GeneralRegisterRequest;
@@ -64,48 +63,49 @@ public class MemberService {
         redisService.deleteData("SignupCode:Verified:" + request.getEmail());
     }
 
-    @Transactional
-    public void registerBusiness(BusinessRegisterRequest request) {
-        log.info("사업자 회원가입 요청 - email: {}", request.getEmail());
+//    [사업자 회원가입 폐기 예정]
+//    @Transactional
+//    public void registerBusiness(BusinessRegisterRequest request) {
+//        log.info("사업자 회원가입 요청 - email: {}", request.getEmail());
+//
+//        String isVerified = redisService.getData("SignupCode:Verified:" + request.getEmail());
+//
+//        if (isVerified == null || !"VERIFIED".equals(isVerified)) {
+//            throw new BusinessException(ErrorCode.UNVERIFIED_EMAIL); // "이메일 인증이 필요합니다"
+//        }
+//
+//        // 이메일 중복 체크
+//        if(memberRepository.existsByEmail(request.getEmail())) {
+//            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+//        }
+//
+//        // 핸드폰 번호 중복 체크
+//        if (memberRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+//            throw new BusinessException(ErrorCode.DUPLICATE_PHONE_NUMBER);
+//        }
+//
+//        String encodedPassword = passwordEncoder.encode(request.getPassword());
+//        Member member = Member.createBusiness(
+//                request.getEmail(),
+//                encodedPassword,
+//                request.getGender(),
+//                request.getUsername(),
+//                request.getNickname(),
+//                request.getZipcode(),
+//                request.getAddress(),
+//                request.getDetailAddress(),
+//                request.getBirthDate(),
+//                request.getPhoneNumber(),
+//                request.getAgreedToTerms(),
+//                request.getAgreedToMarketing()
+//        );
+//
+//        memberRepository.save(member);
+//        redisService.deleteData("SignupCode:Verified:" + request.getEmail());
+//    }
 
-        String isVerified = redisService.getData("SignupCode:Verified:" + request.getEmail());
 
-        if (isVerified == null || !"VERIFIED".equals(isVerified)) {
-            throw new BusinessException(ErrorCode.UNVERIFIED_EMAIL); // "이메일 인증이 필요합니다"
-        }
-
-        // 이메일 중복 체크
-        if(memberRepository.existsByEmail(request.getEmail())) {
-            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
-        }
-
-        // 핸드폰 번호 중복 체크
-        if (memberRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new BusinessException(ErrorCode.DUPLICATE_PHONE_NUMBER);
-        }
-
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
-        Member member = Member.createBusiness(
-                request.getEmail(),
-                encodedPassword,
-                request.getGender(),
-                request.getUsername(),
-                request.getNickname(),
-                request.getZipcode(),
-                request.getAddress(),
-                request.getDetailAddress(),
-                request.getBirthDate(),
-                request.getPhoneNumber(),
-                request.getAgreedToTerms(),
-                request.getAgreedToMarketing()
-        );
-
-        memberRepository.save(member);
-        redisService.deleteData("SignupCode:Verified:" + request.getEmail());
-    }
-
-
-
+    // 아이디 찾기
     @Transactional(readOnly = true)
     public FindEmailResponse findEmail(FindEmailRequest request) {
         String maskedName = MaskingUtil.maskName(request.getUsername());

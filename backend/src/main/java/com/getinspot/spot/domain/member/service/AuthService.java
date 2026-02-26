@@ -35,6 +35,7 @@ public class AuthService {
 
     private static final long EMAIL_EXPIRATION = 60 * 3L; // 5분
 
+    // 회원가입 인증코드 이메일 발송
     @Transactional
     public EmailSendResponse sendSignupCode(String email) {
         if (memberRepository.existsByEmail(email)) {
@@ -58,6 +59,7 @@ public class AuthService {
                 .build();
     }
 
+    // 회원가입 인증코드 검증 및 자격부여
     @Transactional
     public void verifySignup(String email, String code) {
         mailService.verifyEmail("SignupCode:" + email, code);
@@ -65,6 +67,7 @@ public class AuthService {
         redisService.setDataExpire("SignupCode:Verified:" + email, "VERIFIED", 1800L);
     }
 
+    // 로그인
     @Transactional
     public TokenResponse login(LoginRequest request) {
         log.info("로그인 시도 - email: [{}]", request.getEmail());
@@ -91,6 +94,7 @@ public class AuthService {
         }
     }
 
+    // 토큰 재발급(accessToken)
     @Transactional
     public TokenResponse reissue(String refreshToken) {
         // Refresh Token 검증 (만료 여부, 위조 여부)
@@ -130,6 +134,7 @@ public class AuthService {
                 .build();
     }
 
+    // 비밀번호 재설정 인증코드 발송
     @Transactional
     public void sendPasswordResetCode(PasswordResetCodeRequest request) {
         String maskedEmail = MaskingUtil.maskEmail(request.getEmail());
@@ -155,6 +160,7 @@ public class AuthService {
         log.info("비밀번호 재설정 코드 발송 완료 - Email: [{}]", maskedEmail);
     }
 
+    // 비밀번호 재설정 인증코드 검증 및 자격부여
     @Transactional
     public String verifyPasswordResetCode(CodeVerificationRequest request) {
         String codeKey = "ResetCode:" + request.getEmail();
@@ -173,6 +179,7 @@ public class AuthService {
         return resetToken;
     }
 
+    // 비밀번호 재설정
     @Transactional
     public void resetPassword(PasswordResetRequest request) {
         String tokenKey = "ResetToken:" + request.getEmail();

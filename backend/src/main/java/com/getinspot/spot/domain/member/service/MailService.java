@@ -19,6 +19,7 @@ import java.util.Random;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+// 이메일 관련 기능
 public class MailService {
 
     private final JavaMailSender javaMailSender;
@@ -27,6 +28,7 @@ public class MailService {
     @Value("${spring.mail.username}")
     private String senderEmail;
 
+    // 인증코드 발송
     public String sendEmail(String toEmail, String subject, String title, String content) {
         String verificationCode = createCode();
         String htmlContent = createEmailHtml(title, content, verificationCode);
@@ -43,6 +45,7 @@ public class MailService {
         }
     }
 
+    // 이메일 인증 폼 생성기
     private MimeMessage createEmailForm(String email, String subject, String text)
             throws MessagingException, UnsupportedEncodingException {
         MimeMessage message = javaMailSender.createMimeMessage();
@@ -57,6 +60,7 @@ public class MailService {
         return message;
     }
 
+    // 인증코드 번호 생성기
     private String createCode() {
         Random random = new Random();
         StringBuilder key = new StringBuilder();
@@ -71,6 +75,7 @@ public class MailService {
         return key.toString();
     }
 
+    // 인증코드 검증
     public void verifyEmail(String key, String code) {
         log.info("인증 검증 요청 - key: [{}], code: [{}]", key, code);
 
@@ -91,6 +96,7 @@ public class MailService {
         log.info("인증 성공 및 코드 삭제 - key: [{}]", key);
     }
 
+    // 이메일 양식
     private String createEmailHtml(String title, String message, String code) {
         int year = Year.now().getValue();
 
