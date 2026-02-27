@@ -39,17 +39,6 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false)
     private String birthDate;
 
-    @Column(nullable = true)
-    private String zipcode;
-
-    @Convert(converter = EncryptConverter.class)
-    @Column(nullable = true)
-    private String address;
-
-    @Convert(converter = EncryptConverter.class)
-    @Column(nullable = true)
-    private String detailAddress;
-
     @Convert(converter = EncryptConverter.class)
     @Column(nullable = false, unique = true)
     private String phoneNumber;
@@ -64,10 +53,13 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false)
     private Role role;
 
+    // 💡 추가됨: BusinessInfo와의 1:1 양방향 매핑
+    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private BusinessInfo businessInfo;
+
     @Builder
     private Member(String email, String password, String username, String nickname,
-                   String birthDate, String phoneNumber, String zipcode,
-                   String address, String detailAddress,
+                   String birthDate, String phoneNumber,
                    Boolean agreedToTerms, Boolean agreedToMarketing,
                    Gender gender, Role role) {
         this.email = email;
@@ -76,17 +68,14 @@ public class Member extends BaseTimeEntity {
         this.nickname = nickname;
         this.birthDate = birthDate;
         this.phoneNumber = phoneNumber;
-        this.zipcode = zipcode;
-        this.address = address;
-        this.detailAddress = detailAddress;
         this.agreedToTerms = agreedToTerms;
         this.agreedToMarketing = agreedToMarketing;
         this.gender = gender;
         this.role = role;
     }
 
-    // 일반 사용자
-    public static Member createGeneral(
+    // 통합 회원가입용
+    public static Member createMember(
             String email,
             String encodedPassword,
             Gender gender,
@@ -111,39 +100,46 @@ public class Member extends BaseTimeEntity {
                 .build();
     }
 
-    // 사업자
-    public static Member createBusiness(
-            String email,
-            String encodedPassword,
-            Gender gender,
-            String username,
-            String nickname,
-            String zipcode,
-            String address,
-            String detailAddress,
-            String birthDate,
-            String phoneNumber,
-            Boolean agreedToTerms,
-            Boolean agreedToMarketing
-    ) {
-        return Member.builder()
-                .email(email)
-                .password(encodedPassword)
-                .username(username)
-                .nickname(nickname)
-                .zipcode(zipcode)
-                .address(address)
-                .detailAddress(detailAddress)
-                .birthDate(birthDate)
-                .phoneNumber(phoneNumber)
-                .agreedToTerms(agreedToTerms)
-                .agreedToMarketing(agreedToMarketing)
-                .gender(gender)
-                .role(Role.GENERAL)
-                .build();
-    }
+//    // 사업자 [폐기 예정]
+//    public static Member createBusiness(
+//            String email,
+//            String encodedPassword,
+//            Gender gender,
+//            String username,
+//            String nickname,
+//            String zipcode,
+//            String address,
+//            String detailAddress,
+//            String birthDate,
+//            String phoneNumber,
+//            Boolean agreedToTerms,
+//            Boolean agreedToMarketing
+//    ) {
+//        return Member.builder()
+//                .email(email)
+//                .password(encodedPassword)
+//                .username(username)
+//                .nickname(nickname)
+//                .zipcode(zipcode)
+//                .address(address)
+//                .detailAddress(detailAddress)
+//                .birthDate(birthDate)
+//                .phoneNumber(phoneNumber)
+//                .agreedToTerms(agreedToTerms)
+//                .agreedToMarketing(agreedToMarketing)
+//                .gender(gender)
+//                .role(Role.GENERAL)
+//                .build();
+//    }
 
+    // 비밀번호 재설정 용
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    // 사업자로 권한 업그레이드 및 정보 연결 로직
+    public void upgradeToBusiness(BusinessInfo businessInfo) {
+        this.role = Role.BUSINESS;
+        this.businessInfo = businessInfo;
     }
 }

@@ -1,9 +1,12 @@
 package com.getinspot.spot.domain.member.service;
 
+import com.getinspot.spot.domain.member.dto.BusinessUpgradeRequest;
 import com.getinspot.spot.domain.member.dto.FindEmailRequest;
 import com.getinspot.spot.domain.member.dto.FindEmailResponse;
 import com.getinspot.spot.domain.member.dto.GeneralRegisterRequest;
+import com.getinspot.spot.domain.member.entity.BusinessInfo;
 import com.getinspot.spot.domain.member.entity.Member;
+import com.getinspot.spot.domain.member.entity.Role;
 import com.getinspot.spot.domain.member.repository.MemberRepository;
 import com.getinspot.spot.global.common.service.RedisService;
 import com.getinspot.spot.global.error.ErrorCode;
@@ -47,7 +50,7 @@ public class MemberService {
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-        Member member = Member.createGeneral(
+        Member member = Member.createMember(
                 request.getEmail(),
                 encodedPassword,
                 request.getGender(),
@@ -126,5 +129,27 @@ public class MemberService {
         return new FindEmailResponse(maskedEmail);
     }
 
+    // 사업자로 권한 업그레이드
+    @Transactional
+    public void upgradeToBusinessRole(Long memberId, BusinessUpgradeRequest request) {
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        if (member.getRole() == Role.BUSINESS) {
+            throw new IllegalStateException("이미 사업자 권한을 가진 회원입니다.");
+        }
+
+        BusinessInfo businessInfo = BusinessInfo.create(
+                member,
+                request.getCompanyName(),
+                request.getBusinessNumber(),
+                request.getZipcode(),
+                request.getAddress(),
+                request.getDetailAddress()
+        );
+
+        member.upgradeToBusiness(businessInfo);
+    }
 
 }

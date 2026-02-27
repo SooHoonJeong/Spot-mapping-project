@@ -14,11 +14,15 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -104,8 +108,7 @@ public class AuthService {
         }
 
         // 토큰에서 유저 정보(Email) 추출
-        Authentication authentication = tokenProvider.getAuthentication(refreshToken);
-        String email = authentication.getName();
+        String email = tokenProvider.getUserEmail(refreshToken);
 
         log.info("토큰 재발급 요청 진입 - Email: [{}]", email);
 
@@ -123,9 +126,16 @@ public class AuthService {
             throw new BusinessException(ErrorCode.INVALID_AUTH_CODE);
         }
 
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        TokenResponse tokenDto = tokenProvider.generateToken(authentication);
+        List<GrantedAuthority> authorities = Collections.singletonList(
+                new SimpleGrantedAuthority(member.getRole().name())
+        );
+        Authentication newAuthentication = new UsernamePasswordAuthenticationToken(email, null, authorities);
 
+        // 5. 이 최신 권한 객체(newAuthentication)를 기반으로 새 토큰 생성!
+        TokenResponse tokenDto = tokenProvider.generateToken(newAuthentication);
         log.info("Access Token 재발급 성공 - Email: [{}]", email);
 
         return TokenResponse.builder()
