@@ -2,7 +2,6 @@ package com.getinspot.spot.domain.member.controller;
 
 import com.getinspot.spot.domain.member.dto.*;
 import com.getinspot.spot.domain.member.service.AuthService;
-import com.getinspot.spot.domain.member.service.MailService;
 import com.getinspot.spot.domain.member.service.MemberService;
 import com.getinspot.spot.global.common.response.ApiResponse;
 import com.getinspot.spot.global.error.ErrorCode;
