@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
+import { useAuthStore } from "../../../stores/useAuthStore";
 
 export default function LoginForm() {
+  const login = useAuthStore((state) => state.login);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,7 +21,10 @@ export default function LoginForm() {
     setError("");
 
     try {
-      await authService.login(formData.email, formData.password);
+      const result = await authService.login(formData.email, formData.password);
+
+      login(result.user);
+
       alert("로그인 성공!");
       navigate("/");
     } catch (err) {

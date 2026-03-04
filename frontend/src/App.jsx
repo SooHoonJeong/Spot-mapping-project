@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
@@ -7,8 +8,28 @@ import LoginPage from "./pages/LoginPage";
 import Button from "./components/Button";
 import Input from "./components/Input";
 import "./App.css";
+import { useAuthStore } from "./stores/useAuthStore";
+import { authService } from "./features/auth/services/authService";
 
 function App() {
+  const { setAccessToken, setUser } = useAuthStore();
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        const response = await API.post("refresh API 주소");
+        setAccessToken(response.data.accessToken);
+
+        const userRes = await authService.getProfile();
+        setUser(userRes);
+      } catch (err) {
+        console.log("로그인 상태가 아닙니다.");
+      }
+    };
+
+    checkLoginStatus();
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
