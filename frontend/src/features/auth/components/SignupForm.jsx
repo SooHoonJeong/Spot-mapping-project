@@ -21,6 +21,11 @@ export default function SignupForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // mail verification
+  const [isEmailSent, setIsEmailSent] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     let finalValue = value;
@@ -36,10 +41,40 @@ export default function SignupForm() {
     }));
   };
 
+  // mail verification
+  const handleSendCode = async () => {
+    if (!formData.email) return alert("이메일을 먼저 입력해주세요.");
+    try {
+      await authService.sendVerificationEmail(formData.email);
+      setIsEmailSent(true);
+      alert("인증번호가 발송되었습니다.");
+    } catch (err) {
+      alert("발송 실패 : " + (err.response?.data?.message || "오류 발생"));
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    try {
+      await authService.checkVerificationEmail(
+        formData.email,
+        verificationCode,
+      );
+      setIsEmailVerified(true);
+      alert("인증이 완료되었습니다.");
+    } catch (err) {
+      alert("인증번호가 틀렸습니다.");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (!isEmailVerified) {
+      setError("이메일 인증을 완료햐주세요.");
+      return;
+    }
 
     if (formData.password !== formData.passwordConfirm) {
       setError("비밀번호가 일치하지 않습니다.");
@@ -58,7 +93,7 @@ export default function SignupForm() {
 
     try {
       const result = await authService.signup(formData);
-      alert(`${result.name}님, 가입을 축하드립니다!`);
+      alert(`${result.username}님, 가입을 축하드립니다!`);
 
       navigate("/login");
     } catch (err) {
@@ -76,15 +111,48 @@ export default function SignupForm() {
       className="flex flex-col gap-4 w-full max-w-sm mx-auto p-6 bg-white rounded-xl shadow-md"
     >
       <h2 className="text-2xl font-bold text-center mb-4">회원가입</h2>
-
-      <input
-        name="email"
-        type="email"
-        placeholder="이메일"
-        required
-        onChange={handleChange}
-        className="p-2 border rounded"
-      />
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <input
+            name="email"
+            type="email"
+            placeholder="이메일"
+            disabled={isEmailVerified}
+            required
+            onChange={handleChange}
+            className="p-2 border rounded disabled:bg-gray-100"
+          />
+          <button
+            type="button"
+            onClick={handleSendCode}
+            disabled={isEmailVerified || loading}
+            className="px-3 py-1 bg-gray-800 text-white rounded text-sm hover:bg-gray-700 disabled:bg-gray-300"
+          >
+            {isEmailSent ? "재발송" : "인증받기"}
+          </button>
+        </div>
+        {isEmailSent && !isEmailVerified && (
+          <div>
+            <input
+              type="text"
+              placegolder="인증번호 6자리"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+              className="flex-1 p-2 border-blue-400 rounded"
+            />
+            <button
+              type="button"
+              onClick={handleVerifyCode}
+              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500"
+            >
+              확인
+            </button>
+          </div>
+        )}
+        {isEmailVerified && (
+          <p className="text-green-600 text-xs font-bold">이메일 인증 완료</p>
+        )}
+      </div>
       <input
         name="password"
         type="password"
