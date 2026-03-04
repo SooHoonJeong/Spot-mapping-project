@@ -1,4 +1,4 @@
-package com.getinspot.spot.domain.member.dto;
+package com.getinspot.spot.domain.member.dto.member;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

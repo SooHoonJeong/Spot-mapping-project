@@ -2,6 +2,7 @@ package com.getinspot.spot.domain.member.service;
 
 import com.getinspot.spot.domain.member.entity.Member;
 import com.getinspot.spot.domain.member.repository.MemberRepository;
+import com.getinspot.spot.global.config.security.CustomUserDetails;
 import com.getinspot.spot.global.error.ErrorCode;
 import com.getinspot.spot.global.error.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Transactional
     public UserDetails loadUserByUsername(String email) {
         return memberRepository.findByEmail(email)
-                .map(this::createUserDetails)
+                .map(member -> new CustomUserDetails(member))
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
     }
 

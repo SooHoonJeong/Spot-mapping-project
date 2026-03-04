@@ -37,3 +37,7 @@ jwt:
   secret: ${JWT_SECRET}
   access-token-expire-ms: ${JWT_ACCESS_TOKEN_EXPIRE_MS}
   refresh-token-expire-ms: ${JWT_REFRESH_TOKEN_EXPIRE_MS}
+
+app:
+  default:
+    profile-image: ${DEFAULT_PROFILE_IMAGE_PATH}

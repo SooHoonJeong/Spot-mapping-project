@@ -1,4 +1,4 @@
-package com.getinspot.spot.domain.member.dto;
+package com.getinspot.spot.domain.member.dto.member;
 
 import com.getinspot.spot.domain.member.entity.Gender;
 import jakarta.validation.constraints.AssertTrue;

@@ -1,6 +1,6 @@
 package com.getinspot.spot.global.jwt;
 
-import com.getinspot.spot.domain.member.dto.TokenResponse;
+import com.getinspot.spot.domain.member.dto.auth.TokenResponse;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;

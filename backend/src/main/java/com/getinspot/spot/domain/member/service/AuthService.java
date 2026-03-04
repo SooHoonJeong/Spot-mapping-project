@@ -1,6 +1,11 @@
 package com.getinspot.spot.domain.member.service;
 
-import com.getinspot.spot.domain.member.dto.*;
+import com.getinspot.spot.domain.member.dto.auth.CodeVerificationRequest;
+import com.getinspot.spot.domain.member.dto.auth.EmailSendResponse;
+import com.getinspot.spot.domain.member.dto.auth.LoginRequest;
+import com.getinspot.spot.domain.member.dto.auth.TokenResponse;
+import com.getinspot.spot.domain.member.dto.member.PasswordResetCodeRequest;
+import com.getinspot.spot.domain.member.dto.member.PasswordResetRequest;
 import com.getinspot.spot.domain.member.entity.Member;
 import com.getinspot.spot.domain.member.repository.MemberRepository;
 import com.getinspot.spot.global.common.service.RedisService;
