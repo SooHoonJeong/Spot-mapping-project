@@ -10,6 +10,7 @@ import Input from "./components/Input";
 import "./App.css";
 import { useAuthStore } from "./stores/useAuthStore";
 import { authService } from "./features/auth/services/authService";
+import Navbar from "./features/auth/components/Navbar";
 
 function App() {
   const { setAccessToken, setUser } = useAuthStore();
@@ -32,6 +33,7 @@ function App() {
 
   return (
     <BrowserRouter>
+    <Navbar />
       <Routes>
         <Route path="/" element={<homePage />} />
         <Route path="signup" element={<SignupPage />} />
