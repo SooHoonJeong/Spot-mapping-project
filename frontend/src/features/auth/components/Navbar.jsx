@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../stores/useAuthStore";
 
 export default function Navbar() {
-  const { use, isLoggedIn, logout } = useAuthStore();
+  const { user, isLoggedIn, logout } = useAuthStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -70,7 +70,7 @@ export default function Navbar() {
                   </div>
                 </Link>
                 <button
-                  onclick={handleLogout}
+                  onClick={handleLogout}
                   className="ml-2 px-3 py-1.5 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                 >
                   로그아웃

@@ -2,7 +2,7 @@ import API from "../../../api/axios";
 
 export const authService = {
   async getProfile() {
-    const response = await API.get("");
+    const response = await API.get("/members/me");
     return response.data;
   },
 

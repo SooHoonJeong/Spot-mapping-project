@@ -72,7 +72,7 @@ export default function SignupForm() {
     setError("");
 
     if (!isEmailVerified) {
-      setError("이메일 인증을 완료햐주세요.");
+      setError("이메일 인증을 완료해주세요.");
       return;
     }
 
@@ -93,7 +93,7 @@ export default function SignupForm() {
 
     try {
       const result = await authService.signup(formData);
-      alert(`${result.username}님, 가입을 축하드립니다!`);
+      alert(`${formData.nickname}님, 가입을 축하드립니다!`);
 
       navigate("/login");
     } catch (err) {

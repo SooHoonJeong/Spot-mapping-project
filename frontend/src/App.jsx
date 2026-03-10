@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
+import HomePage from "./features/auth/components/HomePage";
 import SignupPage from "./pages/SignupPage";
 import LoginPage from "./pages/LoginPage";
 import Button from "./components/Button";
@@ -33,9 +34,9 @@ function App() {
 
   return (
     <BrowserRouter>
-    <Navbar />
+      <Navbar />
       <Routes>
-        <Route path="/" element={<homePage />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="signup" element={<SignupPage />} />
         <Route path="login" element={<LoginPage />} />
       </Routes>

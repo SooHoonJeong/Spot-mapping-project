@@ -22,11 +22,15 @@ export default function LoginForm() {
 
     try {
       const result = await authService.login(formData.email, formData.password);
+      const token = result.data.accessToken;
 
-      login(result.user);
+      useAuthStore.getState().setAccessToken(token);
 
-      alert("로그인 성공!");
-      navigate("/");
+      const userData = await authService.getProfile();
+      useAuthStore.getState().setUser(userData);
+
+      navigate("/", { replace: true });
+      alert(`${userData.nickname || "회원"}님, 로그인 성공!`);
     } catch (err) {
       setError(
         err.response?.data?.message || "아이디 또는 비밀번호가 틀렸습니다.",
