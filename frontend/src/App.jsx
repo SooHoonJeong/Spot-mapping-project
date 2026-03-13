@@ -6,8 +6,6 @@ import viteLogo from "/vite.svg";
 import HomePage from "./features/auth/components/HomePage";
 import SignupPage from "./pages/SignupPage";
 import LoginPage from "./pages/LoginPage";
-import Button from "./components/Button";
-import Input from "./components/Input";
 import "./App.css";
 import { useAuthStore } from "./stores/useAuthStore";
 import { authService } from "./features/auth/services/authService";
