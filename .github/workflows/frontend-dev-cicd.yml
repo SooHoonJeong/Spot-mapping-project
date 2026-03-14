@@ -1,0 +1,41 @@
+name: Frontend Dev CI/CD
+
+on: 
+    push:
+        branches: [ "frontend-dev" ]
+
+jobs:
+    build-and-deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            - name: Log in to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                username: ${{ secrets.DOCKER_USERNAME }}
+                password: ${{ secrets.DOCKER_PASSWORD }}
+
+            # 2. Docker 이미지 빌드 및 푸시
+            - name: Build and Push Docker Image
+              uses: docker/build-push-action@v5
+              with:
+                context: ./frontend
+                file: ./Dockerfile
+                push: true
+                tags: ${{ secrets.DOCKER_USERNAME }}/spot-frontend:latest
+
+            - name: Deploy to Dev Server
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                host: ${{ secrets.SERVER_HOST }}
+                username: ${{ secrets.SERVER_USER }}
+                key: ${{ secrets.SERVER_SSH_KEY }}
+                port: ${{ secrets.SERVER_SSH_PORT }}
+                script: |
+                  cd ~/spot
+                  docker-compose pull frontend
+                  docker-compose up -d frontend
+                  docker image prune -f
