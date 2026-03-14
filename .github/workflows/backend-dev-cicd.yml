@@ -65,7 +65,7 @@ jobs:
                 port: ${{ secrets.SERVER_SSH_PORT }}
                 script: |
                   cd ~/spot
-                  docker-compose pull backend prometheus grafana
-                  docker-compose up -d backend prometheus grafana
+                  docker compose pull backend prometheus grafana
+                  docker compose up -d backend prometheus grafana
                   docker image prune -f
 

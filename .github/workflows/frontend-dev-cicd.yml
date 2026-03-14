@@ -35,6 +35,6 @@ jobs:
                 port: ${{ secrets.SERVER_SSH_PORT }}
                 script: |
                   cd ~/spot
-                  docker-compose pull frontend
-                  docker-compose up -d frontend
+                  docker compose pull frontend
+                  docker compose up -d frontend
                   docker image prune -f
