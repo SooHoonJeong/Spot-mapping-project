@@ -69,9 +69,3 @@ jobs:
                   docker-compose up -d backend prometheus grafana
                   docker image prune -f
 
-# 아직 Nginx를 안넣었고
-# 백엔드 CICD는 이걸로 됐다면 프론트엔드 CICD 설정도 만들어야됨.
-# 리액트 build -> Nginx 정적 파일로 넣는것은 React의 Dockerfile에서 진행할테니 정적파일을 넣은 Nginx를 이미지화해서 DockerHub에 push하고
-# CICD하면 될 듯
-
-# 그리고 확인해야되는것 -> Nginx에서 프록시 설정 후 Grafana로 들어갈 수 있는지 확인하기.
