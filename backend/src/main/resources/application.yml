@@ -6,6 +6,12 @@ spring:
   config:
     import: optional:file:.env[.properties]
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: ${MAX_FILE_SIZE:1MB}       # 파일 1개당 최대 크기
+      max-request-size: ${MAX_REQUEST_SIZE:10MB}    # 요청 1번당 최대 크기 (여러 파일 동시 업로드 시)
+
   mail:
     host: smtp.gmail.com
     port: 587
@@ -38,6 +44,9 @@ jwt:
   access-token-expire-ms: ${JWT_ACCESS_TOKEN_EXPIRE_MS}
   refresh-token-expire-ms: ${JWT_REFRESH_TOKEN_EXPIRE_MS}
 
+
+file:
+  upload-dir: ${UPLOAD_DIR}
 app:
   default:
     profile-image: ${DEFAULT_PROFILE_IMAGE_PATH}

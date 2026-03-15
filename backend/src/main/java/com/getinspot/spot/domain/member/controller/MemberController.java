@@ -1,6 +1,7 @@
 package com.getinspot.spot.domain.member.controller;
 
 import com.getinspot.spot.domain.member.dto.member.MemberProfileResponse;
+import com.getinspot.spot.domain.member.dto.member.MemberProfileSummaryResponse;
 import com.getinspot.spot.domain.member.service.MemberService;
 import com.getinspot.spot.global.config.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class MemberController {
 
     private final MemberService memberService;
+
+    @GetMapping("/me/summary")
+    public ResponseEntity<MemberProfileSummaryResponse> getMySummaryProfile(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        MemberProfileSummaryResponse response = memberService.getMySummaryProfile(userDetails.getId());
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/me")
     public ResponseEntity<MemberProfileResponse> getMyProfile(@AuthenticationPrincipal CustomUserDetails userDetails) {

@@ -1,29 +1,49 @@
 package com.getinspot.spot.domain.member.entity;
 
+import com.getinspot.spot.global.common.entity.BaseCreatedTime;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 @Table(name = "image", indexes = {
         @Index(name = "idx_image_target", columnList = "target_id, target_type")
 })
-public class Image {
+public class Image extends BaseCreatedTime {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String uuid;
+    @Column(name = "image_id", updatable = false, nullable = false)
+    private UUID id;
 
-    private String fileName;
+    @Column(nullable = false)
+    private String originalFileName;
 
-    private String filePath; // 실제 파일이 저장된 경로 또는 URL
+    @Column(nullable = false, unique = true)
+    private String storedFileName;
 
-    @Column(name = "target_id")
-    private Long targetId; // Member의 ID 또는 Event의 ID 등
+    @Column(nullable = false)
+    private String filePath;
 
-    @Column(name = "target_type")
-    private String targetType; // "MEMBER", "EVENT" 등 구분값
+    @Column(name = "target_id", nullable = false)
+    private Long targetId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_type", nullable = false)
+    private ImageTargetType targetType;
+
+    @Builder
+    public Image(String originalFileName, String storedFileName, String filePath, Long targetId, ImageTargetType targetType) {
+        this.originalFileName = originalFileName;
+        this.storedFileName = storedFileName;
+        this.filePath = filePath;
+        this.targetId = targetId;
+        this.targetType = targetType;
+    }
 }

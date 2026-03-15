@@ -7,19 +7,17 @@ import lombok.*;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class MemberProfileResponse {
+public class MemberProfileSummaryResponse {
     private Long id;
     private String email;
     private String nickname;
-    private String username;
     private String profileImageUrl;
 
-    public static MemberProfileResponse of(Member member, String profileImageUrl) {
-        return MemberProfileResponse.builder()
+    public static MemberProfileSummaryResponse of(Member member, String profileImageUrl) {
+        return MemberProfileSummaryResponse.builder()
                 .id(member.getId())
                 .email(member.getEmail())
                 .nickname(member.getNickname())
-                .username(member.getUsername())
                 .profileImageUrl(profileImageUrl)
                 .build();
     }

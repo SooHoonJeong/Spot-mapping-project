@@ -1,10 +1,7 @@
 package com.getinspot.spot.domain.member.service;
 
 import com.getinspot.spot.domain.member.dto.business.BusinessUpgradeRequest;
-import com.getinspot.spot.domain.member.dto.member.FindEmailRequest;
-import com.getinspot.spot.domain.member.dto.member.FindEmailResponse;
-import com.getinspot.spot.domain.member.dto.member.GeneralRegisterRequest;
-import com.getinspot.spot.domain.member.dto.member.MemberProfileResponse;
+import com.getinspot.spot.domain.member.dto.member.*;
 import com.getinspot.spot.domain.member.entity.BusinessInfo;
 import com.getinspot.spot.domain.member.entity.Member;
 import com.getinspot.spot.domain.member.entity.Role;
@@ -31,8 +28,8 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final RedisService redisService;
 
-    @Value("${app.default.profile-image}")
-    private String defaultProfileImage;
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     // 일반 사용자의 회원가입 로직
     @Transactional
@@ -159,20 +156,29 @@ public class MemberService {
         member.upgradeToBusiness(businessInfo);
     }
 
-    // 내프로필 조회
+    // 메인화면용 내프로필 조회
     @Transactional(readOnly = true)
-    public MemberProfileResponse getMyProfile(Long memberId) {
-        // 1. 회원 정보 조회 (오른쪽 정보 구역용)
+    public MemberProfileSummaryResponse getMySummaryProfile(Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // 2. 이미지 조회 (왼쪽 이미지 구역용)
-        // target_id와 target_type 인덱스를 활용해 빠르게 검색
         String profileImageUrl = imageRepository.findByTargetIdAndTargetType(memberId, "MEMBER")
-                .map(image -> image.getFilePath()) // 직접 등록한 사진이 있으면 그 경로 사용
-                .orElse(defaultProfileImage);    // 없으면 기본 이미지 경로 반환
+                .map(image -> image.getFilePath())
+                .orElse(null);
 
-        // 3. 네이버 프로필 UI에 필요한 모든 데이터를 DTO에 담아 반환
+        return MemberProfileSummaryResponse.of(member, profileImageUrl);
+    }
+
+    // 마이페이지용 내프로필 조회
+    @Transactional(readOnly = true)
+    public MemberProfileResponse getMyProfile(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        String profileImageUrl = imageRepository.findByTargetIdAndTargetType(memberId, "MEMBER")
+                .map(image -> image.getFilePath())
+                .orElse(null);
+
         return MemberProfileResponse.of(member, profileImageUrl);
     }
 }
