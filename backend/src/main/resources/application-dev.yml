@@ -4,7 +4,7 @@ spring:
       on-profile: dev
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_INTERNAL_PORT}/${DB_NAME}
+    url: jdbc:postgresql://${DB_HOST}:${DB_EXTERNAL_PORT}/${DB_NAME}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -12,7 +12,7 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST}
-      port: ${REDIS_INTERNAL_PORT}
+      port: ${REDIS_EXTERNAL_PORT}
 
   jpa:
     hibernate:

@@ -1,5 +1,6 @@
 package com.getinspot.spot.domain.member.repository;
 
+import com.getinspot.spot.domain.member.entity.Image;
 import com.getinspot.spot.domain.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 

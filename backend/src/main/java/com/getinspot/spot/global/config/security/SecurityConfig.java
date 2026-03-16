@@ -1,5 +1,6 @@
-package com.getinspot.spot.global.config;
+package com.getinspot.spot.global.config.security;
 
+import com.getinspot.spot.domain.member.service.CustomUserDetailsService;
 import com.getinspot.spot.global.jwt.JwtAuthenticationFilter;
 import com.getinspot.spot.global.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtTokenProvider tokenProvider;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -36,11 +38,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                             "/api/auth/**",
-                            "/actuator/**"
+                            "/actuator/**",
+                            "/api/members/me",
+                            "/images/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(customUserDetailsService, tokenProvider),
+                        UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

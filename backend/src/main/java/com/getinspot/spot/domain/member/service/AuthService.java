@@ -1,6 +1,11 @@
 package com.getinspot.spot.domain.member.service;
 
-import com.getinspot.spot.domain.member.dto.*;
+import com.getinspot.spot.domain.member.dto.auth.CodeVerificationRequest;
+import com.getinspot.spot.domain.member.dto.auth.EmailSendResponse;
+import com.getinspot.spot.domain.member.dto.auth.LoginRequest;
+import com.getinspot.spot.domain.member.dto.auth.TokenResponse;
+import com.getinspot.spot.domain.member.dto.member.PasswordResetCodeRequest;
+import com.getinspot.spot.domain.member.dto.member.PasswordResetRequest;
 import com.getinspot.spot.domain.member.entity.Member;
 import com.getinspot.spot.domain.member.repository.MemberRepository;
 import com.getinspot.spot.global.common.service.RedisService;
@@ -14,11 +19,15 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -35,6 +44,7 @@ public class AuthService {
 
     private static final long EMAIL_EXPIRATION = 60 * 3L; // 5분
 
+    // 회원가입 인증코드 이메일 발송
     @Transactional
     public EmailSendResponse sendSignupCode(String email) {
         if (memberRepository.existsByEmail(email)) {
@@ -58,6 +68,7 @@ public class AuthService {
                 .build();
     }
 
+    // 회원가입 인증코드 검증 및 자격부여
     @Transactional
     public void verifySignup(String email, String code) {
         mailService.verifyEmail("SignupCode:" + email, code);
@@ -65,6 +76,7 @@ public class AuthService {
         redisService.setDataExpire("SignupCode:Verified:" + email, "VERIFIED", 1800L);
     }
 
+    // 로그인
     @Transactional
     public TokenResponse login(LoginRequest request) {
         log.info("로그인 시도 - email: [{}]", request.getEmail());
@@ -91,6 +103,7 @@ public class AuthService {
         }
     }
 
+    // 토큰 재발급(accessToken)
     @Transactional
     public TokenResponse reissue(String refreshToken) {
         // Refresh Token 검증 (만료 여부, 위조 여부)
@@ -100,8 +113,7 @@ public class AuthService {
         }
 
         // 토큰에서 유저 정보(Email) 추출
-        Authentication authentication = tokenProvider.getAuthentication(refreshToken);
-        String email = authentication.getName();
+        String email = tokenProvider.getUserEmail(refreshToken);
 
         log.info("토큰 재발급 요청 진입 - Email: [{}]", email);
 
@@ -119,9 +131,16 @@ public class AuthService {
             throw new BusinessException(ErrorCode.INVALID_AUTH_CODE);
         }
 
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        TokenResponse tokenDto = tokenProvider.generateToken(authentication);
+        List<GrantedAuthority> authorities = Collections.singletonList(
+                new SimpleGrantedAuthority(member.getRole().name())
+        );
+        Authentication newAuthentication = new UsernamePasswordAuthenticationToken(email, null, authorities);
 
+        // 5. 이 최신 권한 객체(newAuthentication)를 기반으로 새 토큰 생성!
+        TokenResponse tokenDto = tokenProvider.generateToken(newAuthentication);
         log.info("Access Token 재발급 성공 - Email: [{}]", email);
 
         return TokenResponse.builder()
@@ -130,6 +149,7 @@ public class AuthService {
                 .build();
     }
 
+    // 비밀번호 재설정 인증코드 발송
     @Transactional
     public void sendPasswordResetCode(PasswordResetCodeRequest request) {
         String maskedEmail = MaskingUtil.maskEmail(request.getEmail());
@@ -155,6 +175,7 @@ public class AuthService {
         log.info("비밀번호 재설정 코드 발송 완료 - Email: [{}]", maskedEmail);
     }
 
+    // 비밀번호 재설정 인증코드 검증 및 자격부여
     @Transactional
     public String verifyPasswordResetCode(CodeVerificationRequest request) {
         String codeKey = "ResetCode:" + request.getEmail();
@@ -173,6 +194,7 @@ public class AuthService {
         return resetToken;
     }
 
+    // 비밀번호 재설정
     @Transactional
     public void resetPassword(PasswordResetRequest request) {
         String tokenKey = "ResetToken:" + request.getEmail();

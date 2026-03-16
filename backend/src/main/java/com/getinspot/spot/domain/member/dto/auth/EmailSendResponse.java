@@ -1,4 +1,4 @@
-package com.getinspot.spot.domain.member.dto;
+package com.getinspot.spot.domain.member.dto.auth;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;

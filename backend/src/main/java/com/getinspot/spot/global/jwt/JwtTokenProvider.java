@@ -1,6 +1,6 @@
 package com.getinspot.spot.global.jwt;
 
-import com.getinspot.spot.domain.member.dto.TokenResponse;
+import com.getinspot.spot.domain.member.dto.auth.TokenResponse;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -61,10 +61,10 @@ public class JwtTokenProvider {
                 .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
 
+        // Refresh Token (권한 정보 제거)
         Date refreshTokenExpiresAt = new Date(now + refreshTokenExpireMs);
         String refreshToken = Jwts.builder()
                 .setSubject(authentication.getName())
-                .claim(AUTHORITIES_KEY, authorities)
                 .setIssuedAt(new Date(now))
                 .setExpiration(refreshTokenExpiresAt)
                 .signWith(key, SignatureAlgorithm.HS512)
@@ -132,5 +132,10 @@ public class JwtTokenProvider {
         } catch (ExpiredJwtException e) {
             return e.getClaims();
         }
+    }
+
+    //
+    public String getUserEmail(String token) {
+        return parseClaims(token).getSubject();
     }
 }

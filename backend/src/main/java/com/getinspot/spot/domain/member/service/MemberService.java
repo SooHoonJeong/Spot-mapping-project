@@ -1,10 +1,11 @@
 package com.getinspot.spot.domain.member.service;
 
-import com.getinspot.spot.domain.member.dto.BusinessRegisterRequest;
-import com.getinspot.spot.domain.member.dto.FindEmailRequest;
-import com.getinspot.spot.domain.member.dto.FindEmailResponse;
-import com.getinspot.spot.domain.member.dto.GeneralRegisterRequest;
+import com.getinspot.spot.domain.member.dto.business.BusinessUpgradeRequest;
+import com.getinspot.spot.domain.member.dto.member.*;
+import com.getinspot.spot.domain.member.entity.BusinessInfo;
 import com.getinspot.spot.domain.member.entity.Member;
+import com.getinspot.spot.domain.member.entity.Role;
+import com.getinspot.spot.domain.member.repository.ImageRepository;
 import com.getinspot.spot.domain.member.repository.MemberRepository;
 import com.getinspot.spot.global.common.service.RedisService;
 import com.getinspot.spot.global.error.ErrorCode;
@@ -12,6 +13,7 @@ import com.getinspot.spot.global.error.exception.BusinessException;
 import com.getinspot.spot.global.util.MaskingUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final ImageRepository imageRepository;
     private final PasswordEncoder passwordEncoder;
     private final RedisService redisService;
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     // 일반 사용자의 회원가입 로직
     @Transactional
@@ -48,7 +54,7 @@ public class MemberService {
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-        Member member = Member.createGeneral(
+        Member member = Member.createMember(
                 request.getEmail(),
                 encodedPassword,
                 request.getGender(),
@@ -64,48 +70,49 @@ public class MemberService {
         redisService.deleteData("SignupCode:Verified:" + request.getEmail());
     }
 
-    @Transactional
-    public void registerBusiness(BusinessRegisterRequest request) {
-        log.info("사업자 회원가입 요청 - email: {}", request.getEmail());
+//    [사업자 회원가입 폐기 예정]
+//    @Transactional
+//    public void registerBusiness(BusinessRegisterRequest request) {
+//        log.info("사업자 회원가입 요청 - email: {}", request.getEmail());
+//
+//        String isVerified = redisService.getData("SignupCode:Verified:" + request.getEmail());
+//
+//        if (isVerified == null || !"VERIFIED".equals(isVerified)) {
+//            throw new BusinessException(ErrorCode.UNVERIFIED_EMAIL); // "이메일 인증이 필요합니다"
+//        }
+//
+//        // 이메일 중복 체크
+//        if(memberRepository.existsByEmail(request.getEmail())) {
+//            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+//        }
+//
+//        // 핸드폰 번호 중복 체크
+//        if (memberRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+//            throw new BusinessException(ErrorCode.DUPLICATE_PHONE_NUMBER);
+//        }
+//
+//        String encodedPassword = passwordEncoder.encode(request.getPassword());
+//        Member member = Member.createBusiness(
+//                request.getEmail(),
+//                encodedPassword,
+//                request.getGender(),
+//                request.getUsername(),
+//                request.getNickname(),
+//                request.getZipcode(),
+//                request.getAddress(),
+//                request.getDetailAddress(),
+//                request.getBirthDate(),
+//                request.getPhoneNumber(),
+//                request.getAgreedToTerms(),
+//                request.getAgreedToMarketing()
+//        );
+//
+//        memberRepository.save(member);
+//        redisService.deleteData("SignupCode:Verified:" + request.getEmail());
+//    }
 
-        String isVerified = redisService.getData("SignupCode:Verified:" + request.getEmail());
 
-        if (isVerified == null || !"VERIFIED".equals(isVerified)) {
-            throw new BusinessException(ErrorCode.UNVERIFIED_EMAIL); // "이메일 인증이 필요합니다"
-        }
-
-        // 이메일 중복 체크
-        if(memberRepository.existsByEmail(request.getEmail())) {
-            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
-        }
-
-        // 핸드폰 번호 중복 체크
-        if (memberRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new BusinessException(ErrorCode.DUPLICATE_PHONE_NUMBER);
-        }
-
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
-        Member member = Member.createBusiness(
-                request.getEmail(),
-                encodedPassword,
-                request.getGender(),
-                request.getUsername(),
-                request.getNickname(),
-                request.getZipcode(),
-                request.getAddress(),
-                request.getDetailAddress(),
-                request.getBirthDate(),
-                request.getPhoneNumber(),
-                request.getAgreedToTerms(),
-                request.getAgreedToMarketing()
-        );
-
-        memberRepository.save(member);
-        redisService.deleteData("SignupCode:Verified:" + request.getEmail());
-    }
-
-
-
+    // 아이디 찾기
     @Transactional(readOnly = true)
     public FindEmailResponse findEmail(FindEmailRequest request) {
         String maskedName = MaskingUtil.maskName(request.getUsername());
@@ -126,5 +133,52 @@ public class MemberService {
         return new FindEmailResponse(maskedEmail);
     }
 
+    // 사업자로 권한 업그레이드
+    @Transactional
+    public void upgradeToBusinessRole(Long memberId, BusinessUpgradeRequest request) {
 
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        if (member.getRole() == Role.BUSINESS) {
+            throw new IllegalStateException("이미 사업자 권한을 가진 회원입니다.");
+        }
+
+        BusinessInfo businessInfo = BusinessInfo.create(
+                member,
+                request.getCompanyName(),
+                request.getBusinessNumber(),
+                request.getZipcode(),
+                request.getAddress(),
+                request.getDetailAddress()
+        );
+
+        member.upgradeToBusiness(businessInfo);
+    }
+
+    // 메인화면용 내프로필 조회
+    @Transactional(readOnly = true)
+    public MemberProfileSummaryResponse getMySummaryProfile(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        String profileImageUrl = imageRepository.findByTargetIdAndTargetType(memberId, "MEMBER")
+                .map(image -> image.getFilePath())
+                .orElse(null);
+
+        return MemberProfileSummaryResponse.of(member, profileImageUrl);
+    }
+
+    // 마이페이지용 내프로필 조회
+    @Transactional(readOnly = true)
+    public MemberProfileResponse getMyProfile(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        String profileImageUrl = imageRepository.findByTargetIdAndTargetType(memberId, "MEMBER")
+                .map(image -> image.getFilePath())
+                .orElse(null);
+
+        return MemberProfileResponse.of(member, profileImageUrl);
+    }
 }
