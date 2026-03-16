@@ -1,8 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../stores/useAuthStore";
 import { useState } from "react";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faBars, faX} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBars, faX } from "@fortawesome/free-solid-svg-icons";
 
 export default function Navbar() {
   const { user, isLoggedIn, logout } = useAuthStore();
@@ -21,8 +21,15 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-white relative z-[110]">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-gray-600">
-              <FontAwesomeIcon icon={isMenuOpen ? faX : faBars} className="fa-solid fa-bars" size="lg"/>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 text-gray-600"
+            >
+              <FontAwesomeIcon
+                icon={isMenuOpen ? faX : faBars}
+                className="fa-solid fa-bars"
+                size="lg"
+              />
             </button>
             <Link
               to="/"
@@ -88,28 +95,33 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-      <div className={`fixed inset-0 top-16 bg-white z-[90] transform transition-transform duration-500 ease-in-out ${isMenuOpen ? "translate-y-0" : "-translate-y-full"}`}>
-          <div className="flex flex-col p-8 gap-8 h-full bg-white">
-            <Link
-                  to="/map"
-                  className="text-4xl font-bold text-gray-800 hover:text-blue-600 transition-colors border-b border-gray-100 pb-4" onClick={() => setIsMenuOpen(false)}
-                >
-                  지도 보기
-                </Link>
-                <Link
-                  to="/community"
-                  className="text-4xl font-bold text-gray-800 hover:text-blue-600 transition-colors border-b border-gray-100 pb-4" onClick={() => setIsMenuOpen(false)}
-                >
-                  커뮤니티
-                </Link>
-                <Link
-                  to="/notice"
-                  className="text-4xl font-bold text-gray-800 hover:text-blue-600 transition-colors border-b border-gray-100 pb-4" onClick={() => setIsMenuOpen(false)}
-                >
-                  공지사항
-                </Link>
-          </div>
+      <div
+        className={`fixed inset-0 top-16 bg-white z-[90] transform transition-transform duration-500 ease-in-out ${isMenuOpen ? "translate-y-0" : "-translate-y-full"}`}
+      >
+        <div className="flex flex-col p-8 gap-8 h-full bg-white">
+          <Link
+            to="/map"
+            className="text-4xl font-bold text-gray-800 hover:text-blue-600 transition-colors border-b border-gray-100 pb-4"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            지도 보기
+          </Link>
+          <Link
+            to="/community"
+            className="text-4xl font-bold text-gray-800 hover:text-blue-600 transition-colors border-b border-gray-100 pb-4"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            커뮤니티
+          </Link>
+          <Link
+            to="/notice"
+            className="text-4xl font-bold text-gray-800 hover:text-blue-600 transition-colors border-b border-gray-100 pb-4"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            공지사항
+          </Link>
         </div>
+      </div>
     </nav>
   );
 }
