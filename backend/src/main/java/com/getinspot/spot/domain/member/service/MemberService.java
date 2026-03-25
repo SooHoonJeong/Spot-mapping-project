@@ -3,6 +3,7 @@ package com.getinspot.spot.domain.member.service;
 import com.getinspot.spot.domain.member.dto.business.BusinessUpgradeRequest;
 import com.getinspot.spot.domain.member.dto.member.*;
 import com.getinspot.spot.domain.member.entity.BusinessInfo;
+import com.getinspot.spot.domain.member.entity.ImageTargetType;
 import com.getinspot.spot.domain.member.entity.Member;
 import com.getinspot.spot.domain.member.entity.Role;
 import com.getinspot.spot.domain.member.repository.ImageRepository;
@@ -162,7 +163,7 @@ public class MemberService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        String profileImageUrl = imageRepository.findByTargetIdAndTargetType(memberId, "MEMBER")
+        String profileImageUrl = imageRepository.findByTargetIdAndTargetType(memberId, ImageTargetType.MEMBER)
                 .map(image -> image.getFilePath())
                 .orElse(null);
 
@@ -175,7 +176,7 @@ public class MemberService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        String profileImageUrl = imageRepository.findByTargetIdAndTargetType(memberId, "MEMBER")
+        String profileImageUrl = imageRepository.findByTargetIdAndTargetType(memberId, ImageTargetType.MEMBER)
                 .map(image -> image.getFilePath())
                 .orElse(null);
 
