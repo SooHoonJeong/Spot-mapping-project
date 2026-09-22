@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageShell, PageHeading } from "@/components/page-shell";
+import { PageShell } from "@/components/page-shell";
 import { CommunityFeed } from "@/features/community/components/community-feed";
 
 export const metadata: Metadata = {
@@ -11,7 +11,6 @@ export const metadata: Metadata = {
 export default function CommunityPage() {
   return (
     <PageShell>
-      <PageHeading pageKey="community" />
       <CommunityFeed />
     </PageShell>
   );

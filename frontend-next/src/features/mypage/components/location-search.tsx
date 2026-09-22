@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, MapPin, Search } from "lucide-react";
 import {
   buildingFrom,
+  regionFrom,
   type NominatimResult,
   type SelectedLocation,
 } from "../lib/location";
@@ -66,6 +67,7 @@ export function LocationSearch({
     onChange({
       address: r.display_name,
       building: buildingFrom(r),
+      region: regionFrom(r),
       lat: Number.parseFloat(r.lat),
       lng: Number.parseFloat(r.lon),
     });

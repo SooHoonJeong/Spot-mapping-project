@@ -4,10 +4,9 @@ import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { CATEGORY_COLORS, MAP_CENTER, type AppEvent } from "../lib/events";
-import { useTranslation } from "@/lib/i18n/LanguageProvider";
+import { MAP_CENTER, PIN_COLOR, type AppEvent } from "../lib/events";
 
-function pinIcon(color: string, active: boolean) {
+function pinIcon(active: boolean) {
   const size = active ? 42 : 34;
   return L.divIcon({
     className: "event-pin",
@@ -17,7 +16,7 @@ function pinIcon(color: string, active: boolean) {
     html: `
       <div style="transform: translateY(0); filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.3));">
         <svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 1C9.92 1 5 5.92 5 12c0 7.5 11 19 11 19s11-11.5 11-19C27 5.92 22.08 1 16 1Z" fill="${color}" stroke="white" stroke-width="2"/>
+          <path d="M16 1C9.92 1 5 5.92 5 12c0 7.5 11 19 11 19s11-11.5 11-19C27 5.92 22.08 1 16 1Z" fill="${PIN_COLOR}" stroke="white" stroke-width="2"/>
           <circle cx="16" cy="12" r="4" fill="white"/>
         </svg>
       </div>`,
@@ -28,7 +27,7 @@ function MapController({
   selectedId,
   events,
 }: {
-  selectedId: string | null;
+  selectedId: number | null;
   events: AppEvent[];
 }) {
   const map = useMap();
@@ -37,7 +36,7 @@ function MapController({
     if (!selectedId) return;
     const ev = events.find((e) => e.id === selectedId);
     if (ev) {
-      map.flyTo([ev.lat, ev.lng], 15, { duration: 0.8 });
+      map.flyTo([ev.latitude, ev.longitude], 15, { duration: 0.8 });
     }
   }, [selectedId, events, map]);
 
@@ -50,10 +49,9 @@ export default function EventMap({
   onSelect,
 }: {
   events: AppEvent[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
+  selectedId: number | null;
+  onSelect: (id: number) => void;
 }) {
-  const { t } = useTranslation();
   return (
     <MapContainer
       center={MAP_CENTER}
@@ -70,8 +68,8 @@ export default function EventMap({
       {events.map((ev) => (
         <Marker
           key={ev.id}
-          position={[ev.lat, ev.lng]}
-          icon={pinIcon(CATEGORY_COLORS[ev.category], ev.id === selectedId)}
+          position={[ev.latitude, ev.longitude]}
+          icon={pinIcon(ev.id === selectedId)}
           eventHandlers={{ click: () => onSelect(ev.id) }}
         >
           <Popup>
@@ -80,21 +78,12 @@ export default function EventMap({
               className="block no-underline"
               onClick={() => onSelect(ev.id)}
             >
-              <img
-                src={ev.image || "/placeholder.svg"}
-                alt={ev.title}
-                className="h-24 w-full object-cover"
-                crossOrigin="anonymous"
-              />
               <div className="p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                  {t(`categories.${ev.category}`)}
-                </p>
-                <p className="mt-0.5 text-sm font-semibold leading-tight text-foreground">
+                <p className="text-sm font-semibold leading-tight text-foreground">
                   {ev.title}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {ev.date} · {ev.time}
+                  {ev.region} · {ev.startDate}
                 </p>
               </div>
             </a>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageShell, PageHeading } from "@/components/page-shell";
+import { PageShell } from "@/components/page-shell";
 import { MyPageDashboard } from "@/features/mypage/components/my-page-dashboard";
 
 export const metadata: Metadata = {
@@ -11,7 +11,6 @@ export const metadata: Metadata = {
 export default function MyPage() {
   return (
     <PageShell>
-      <PageHeading pageKey="myPage" />
       <MyPageDashboard />
     </PageShell>
   );

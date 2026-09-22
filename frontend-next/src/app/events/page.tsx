@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageShell, PageHeading } from "@/components/page-shell";
+import { PageShell } from "@/components/page-shell";
 import { EventsBrowser } from "@/features/events/components/events-browser";
 
 export const metadata: Metadata = {
@@ -11,7 +11,6 @@ export const metadata: Metadata = {
 export default function EventsPage() {
   return (
     <PageShell>
-      <PageHeading pageKey="events" />
       <EventsBrowser />
     </PageShell>
   );

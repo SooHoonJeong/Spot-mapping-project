@@ -1,41 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
 import Navbar from "@/features/auth/components/Navbar";
-import { useAuthStore } from "@/stores/useAuthStore";
-import { authService } from "@/features/auth/services/authService";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
+import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
-// TODO: BUG (pre-existing, preserved as-is from frontend/src/App.jsx): `API` is not
-// imported/defined anywhere in this file — this `declare` only exists to let TypeScript
-// compile while keeping the exact original runtime behavior: a ReferenceError is thrown and
-// silently swallowed by the catch block below. "refresh API 주소" is also a placeholder
-// string, not a real endpoint. Left unfixed per migration parity requirements.
-declare const API: { post: (url: string) => Promise<any> };
-
+// Login state now rehydrates on its own from localStorage (see useAuthStore's persist
+// middleware), so there's no longer anything to do here on mount — this used to call a
+// refresh-token endpoint that was never actually implemented (declare const API; "refresh API
+// 주소" placeholder), which always threw and was silently swallowed.
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const { setAccessToken, setUser } = useAuthStore();
-
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      try {
-        const response = await API.post("refresh API 주소");
-        setAccessToken(response.data.accessToken);
-
-        const userRes = await authService.getProfile();
-        setUser(userRes);
-      } catch (err) {
-        console.log("로그인 상태가 아닙니다.");
-      }
-    };
-
-    checkLoginStatus();
-  }, []);
-
   return (
-    <LanguageProvider>
-      <Navbar />
-      {children}
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <Navbar />
+        {children}
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }

@@ -25,7 +25,7 @@ export function Hero() {
         <div className="absolute inset-0 bg-foreground/60" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-7xl px-4 py-24 md:py-32">
+      <div className="relative mx-auto w-full max-w-7xl px-4 py-14 md:py-20">
         <div className="max-w-2xl">
           <span className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-semibold text-primary-foreground">
             <MapPin className="size-4" />
@@ -58,7 +58,7 @@ export function Hero() {
             </Button>
           </div>
 
-          <dl className="mt-12 grid max-w-md grid-cols-3 gap-6">
+          <dl className="mt-8 grid max-w-md grid-cols-3 gap-5">
             {stats.map((stat) => (
               <div key={stat.label}>
                 <dt className="text-2xl font-bold text-background md:text-3xl">

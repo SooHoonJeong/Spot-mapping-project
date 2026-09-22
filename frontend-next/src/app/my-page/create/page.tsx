@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { PageShell, PageHeading } from "@/components/page-shell";
-import { CreateEventForm } from "@/features/mypage/components/create-event-form";
+import { PageShell } from "@/components/page-shell";
+import { CreateEventWizard } from "@/features/mypage/components/create-event-wizard";
 
 export const metadata: Metadata = {
   title: "Create Event — Spot",
@@ -11,8 +11,7 @@ export const metadata: Metadata = {
 export default function CreateEventPage() {
   return (
     <PageShell>
-      <PageHeading pageKey="myPageCreate" />
-      <CreateEventForm />
+      <CreateEventWizard />
     </PageShell>
   );
 }

@@ -16,11 +16,36 @@ export interface SignupRequestPayload {
   agreedToMarketing: boolean;
 }
 
+// Matches backend's GET/PATCH /api/members/me response `data` shape.
+export interface MyProfileResponse {
+  email: string;
+  username: string;
+  nickname: string;
+  gender: string;
+  birthDate: string;
+  phoneNumber: string;
+  role: string;
+  agreedToMarketing: boolean;
+  profileImageUrl: string | null;
+  createdAt: string;
+}
+
+export interface UpdateProfileRequest {
+  nickname: string;
+  phoneNumber: string;
+  agreedToMarketing: boolean;
+}
+
 export const authService = {
-  async getProfile() {
+  async getProfile(): Promise<MyProfileResponse> {
     const response = await API.get("/api/members/me");
     // response.data is the ApiResponse<T> envelope { success, message, data }; unwrap to
     // the actual MyProfileResponse so callers get real fields (nickname, profileImageUrl, ...).
+    return response.data.data;
+  },
+
+  async updateProfile(payload: UpdateProfileRequest): Promise<MyProfileResponse> {
+    const response = await API.patch("/api/members/me", payload);
     return response.data.data;
   },
 
@@ -41,19 +66,6 @@ export const authService = {
 
   async login(email: string, password: string) {
     const response = await API.post("/api/auth/login", { email, password });
-
-    // TODO: BUG (pre-existing, preserved as-is): checks `response.data.token`, but the rest of
-    // the app actually reads `response.data.accessToken` (see LoginForm.tsx). This branch is
-    // effectively dead code and the localStorage write is inconsistent with the in-memory
-    // zustand store used everywhere else. Left unfixed per migration parity requirements.
-    if (response.data.token) {
-      localStorage.setItem("accessToken", response.data.token);
-    }
-
     return response.data;
-  },
-
-  logout() {
-    localStorage.removeItem("accessToken");
   },
 };

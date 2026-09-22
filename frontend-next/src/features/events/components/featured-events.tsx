@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { ArrowRight, Calendar, MapPin } from "lucide-react";
-import { EVENTS } from "../lib/events";
+import { useEvents } from "../lib/useEvents";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 
 export function FeaturedEvents() {
   const { t } = useTranslation();
-  const featured = EVENTS.slice(0, 3);
+  const { events, loading, error } = useEvents({ size: 3 });
+
   return (
     <section id="featured" className="border-t border-border bg-secondary/40">
-      <div className="mx-auto w-full max-w-7xl px-4 py-16">
+      <div className="mx-auto w-full max-w-7xl px-4 py-10">
         <div className="flex items-end justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-primary">
@@ -29,48 +30,41 @@ export function FeaturedEvents() {
           </Link>
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
-          {featured.map((event) => (
-            <Link
-              key={event.id}
-              href="/events"
-              className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={event.image || "/placeholder.svg"}
-                  alt={event.title}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  crossOrigin="anonymous"
-                />
-                <span className="absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">
-                  {t(`categories.${event.category}`)}
-                </span>
-                <span className="absolute right-3 top-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-bold text-foreground">
-                  {event.price}
-                </span>
-              </div>
-              <div className="p-5">
-                <h3 className="text-lg font-semibold text-card-foreground">
+        {loading && (
+          <p className="mt-8 text-sm text-muted-foreground">{t("featuredEvents.loading")}</p>
+        )}
+        {error && (
+          <p className="mt-8 text-sm text-destructive">{t("featuredEvents.errorState")}</p>
+        )}
+
+        {!loading && !error && events.length > 0 && (
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {events.map((event) => (
+              <Link
+                key={event.id}
+                href={`/events/${event.id}`}
+                className="group overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+              >
+                <h3 className="text-base font-semibold text-card-foreground">
                   {event.title}
                 </h3>
                 <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                   {event.description}
                 </p>
-                <div className="mt-4 flex flex-col gap-1.5 text-sm text-muted-foreground">
+                <div className="mt-3 flex flex-col gap-1 text-xs text-muted-foreground">
                   <span className="flex items-center gap-2">
                     <Calendar className="size-4 text-primary" />
-                    {event.date} · {event.time}
+                    {event.startDate}
                   </span>
                   <span className="flex items-center gap-2">
                     <MapPin className="size-4 text-primary" />
-                    {event.venue}
+                    {event.region}
                   </span>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

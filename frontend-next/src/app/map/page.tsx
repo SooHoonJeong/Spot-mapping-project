@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageShell, PageHeading } from "@/components/page-shell";
+import { PageShell } from "@/components/page-shell";
 import { MapExplorer } from "@/features/events/components/map-explorer";
 
 export const metadata: Metadata = {
@@ -11,7 +11,6 @@ export const metadata: Metadata = {
 export default function MapPage() {
   return (
     <PageShell>
-      <PageHeading pageKey="map" />
       <MapExplorer />
     </PageShell>
   );

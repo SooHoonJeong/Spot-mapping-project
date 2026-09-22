@@ -5,6 +5,8 @@ import {
   MapContainer,
   TileLayer,
   Marker,
+  Polygon,
+  Polyline,
   useMap,
   useMapEvents,
 } from "react-leaflet";
@@ -14,6 +16,8 @@ import { Loader2 } from "lucide-react";
 import { MAP_CENTER } from "@/features/events/lib/events";
 import {
   buildingFrom,
+  regionFrom,
+  type BoundaryLayer,
   type NominatimResult,
   type SelectedLocation,
 } from "../lib/location";
@@ -28,7 +32,7 @@ function markerIcon() {
     html: `
       <div style="filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.3));">
         <svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 1C9.92 1 5 5.92 5 12c0 7.5 11 19 11 19s11-11.5 11-19C27 5.92 22.08 1 16 1Z" fill="#ff6a00" stroke="white" stroke-width="2"/>
+          <path d="M16 1C9.92 1 5 5.92 5 12c0 7.5 11 19 11 19s11-11.5 11-19C27 5.92 22.08 1 16 1Z" fill="#2451c7" stroke="white" stroke-width="2"/>
           <circle cx="16" cy="12" r="4" fill="white"/>
         </svg>
       </div>`,
@@ -68,9 +72,13 @@ function AutoResize() {
 export default function LocationMap({
   value,
   onChange,
+  layers,
 }: {
   value: SelectedLocation | null;
   onChange: (loc: SelectedLocation) => void;
+  // Read-only preview of the event-area layers drawn on the boundary editor page (see
+  // boundary-editor.tsx). Not editable here — too small to draw comfortably.
+  layers?: BoundaryLayer[];
 }) {
   const { t } = useTranslation();
   const [resolving, setResolving] = useState(false);
@@ -83,6 +91,7 @@ export default function LocationMap({
     onChange({
       address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
       building: t("mypage.create.selectedPoint"),
+      region: "",
       lat,
       lng,
     });
@@ -96,6 +105,7 @@ export default function LocationMap({
         onChange({
           address: data.display_name,
           building: buildingFrom(data),
+          region: regionFrom(data),
           lat,
           lng,
         });
@@ -123,6 +133,24 @@ export default function LocationMap({
         <Recenter position={position} />
         <AutoResize />
         {position && <Marker position={position} icon={markerIcon()} />}
+        {layers
+          ?.filter((l) => l.shape === "area" && l.points.length >= 3)
+          .map((l) => (
+            <Polygon
+              key={l.id}
+              positions={l.points.map((p) => [p.lat, p.lng])}
+              pathOptions={{ color: l.color, fillColor: l.color, fillOpacity: 0.25 }}
+            />
+          ))}
+        {layers
+          ?.filter((l) => l.shape === "line" && l.points.length >= 2)
+          .map((l) => (
+            <Polyline
+              key={l.id}
+              positions={l.points.map((p) => [p.lat, p.lng])}
+              pathOptions={{ color: l.color, weight: 3 }}
+            />
+          ))}
       </MapContainer>
       {resolving && (
         <div className="absolute right-3 top-3 z-[1000] flex items-center gap-1.5 rounded-full bg-card/90 px-3 py-1.5 text-xs font-medium shadow-md backdrop-blur">
