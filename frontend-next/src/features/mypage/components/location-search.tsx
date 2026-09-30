@@ -44,11 +44,7 @@ export function LocationSearch({
     debounce.current = setTimeout(async () => {
       try {
         setSearching(true);
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&namedetails=1&limit=6&q=${encodeURIComponent(
-            query,
-          )}`,
-        );
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
         const data: NominatimResult[] = await res.json();
         setResults(data);
         setOpen(true);
