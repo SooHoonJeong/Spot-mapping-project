@@ -32,7 +32,14 @@ export function EventDetailView({ event }: { event: EventDetailData }) {
   // text and embedded photos actually show up) — DOMPurify strips anything that could execute
   // script before it ever reaches the DOM, since this page is public and other hosts' content
   // ends up here too.
-  const safeDescription = DOMPurify.sanitize(event.descriptionHtml);
+  // Photos inserted via the wizard's photo picker are local blob: object URLs until real
+  // upload is wired up — DOMPurify's default allow-list doesn't include that scheme, so it
+  // strips the <img src> entirely. blob: can't carry executable script when used as an <img>
+  // src, so allowing it here doesn't weaken the XSS protection this sanitize call exists for.
+  const safeDescription = DOMPurify.sanitize(event.descriptionHtml, {
+    ALLOWED_URI_REGEXP:
+      /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+  });
 
   return (
     <article className="mx-auto w-full max-w-3xl px-4 py-10">
