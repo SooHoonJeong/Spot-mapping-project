@@ -1,7 +1,15 @@
 import { create } from "zustand";
 import type { BoundaryLayer, LayerGroup, SelectedLocation } from "@/features/mypage/lib/location";
 
-export type DraftPhoto = { id: string; url: string; name: string };
+export type DraftPhoto = {
+  id: string;
+  url: string;
+  name: string;
+  // "uploading"/"error" photos show a local blob: preview; once upload finishes, `url` is
+  // swapped to the server's presigned previewUrl and `photoKey` is set for the submit payload.
+  status: "uploading" | "done" | "error";
+  photoKey?: string;
+};
 
 interface EventDraftState {
   title: string;
@@ -21,6 +29,7 @@ interface EventDraftState {
   setLocation: (v: SelectedLocation | null) => void;
   setDetailAddress: (v: string) => void;
   setPhotos: (updater: DraftPhoto[] | ((prev: DraftPhoto[]) => DraftPhoto[])) => void;
+  updatePhoto: (id: string, patch: Partial<DraftPhoto>) => void;
   // Moves the given photo to the front of the array — the first photo is always treated as the
   // event's cover/main image (see the "대표" badge in the create-event wizard).
   setMainPhoto: (id: string) => void;
@@ -53,6 +62,10 @@ export const useEventDraftStore = create<EventDraftState>((set, get) => ({
   setDetailAddress: (detailAddress) => set({ detailAddress }),
   setPhotos: (updater) =>
     set({ photos: typeof updater === "function" ? updater(get().photos) : updater }),
+  updatePhoto: (id, patch) =>
+    set((state) => ({
+      photos: state.photos.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+    })),
   setMainPhoto: (id) =>
     set((state) => {
       const target = state.photos.find((p) => p.id === id);

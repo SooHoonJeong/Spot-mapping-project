@@ -29,6 +29,7 @@ export function CreateEventWizard() {
   const detailAddress = useEventDraftStore((s) => s.detailAddress);
   const layers = useEventDraftStore((s) => s.layers);
   const groups = useEventDraftStore((s) => s.groups);
+  const photos = useEventDraftStore((s) => s.photos);
 
   const [phase, setPhase] = useState<Phase>("type");
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -75,9 +76,9 @@ export function CreateEventWizard() {
     };
   }
 
-  // TODO: mock submission — 이벤트 생성 API 엔드포인트가 아직 없고, photos는 실제 업로드 URL이
-  // 필요한데(현재는 로컬 blob: URL뿐) 업로드 API 스펙도 없어서 빈 배열로 채워둠. 두 스펙이
-  // 확정되면 실제 POST 요청으로 교체해야 함.
+  // TODO: mock submission — 이벤트 생성 API(POST /api/events) 엔드포인트가 아직 없어서 실제로
+  // 전송하지 않음. 사진 업로드(POST /api/events/photos)는 연결 완료 — photoKeys에 업로드된
+  // photoKey들을 담아 보낸다.
   function handleSubmit() {
     if (!location) return;
     const validLayers = layers.filter((l) => l.points.length >= (l.shape === "area" ? 3 : 2));
@@ -99,11 +100,15 @@ export function CreateEventWizard() {
         type: "FeatureCollection" as const,
         features: validLayers.map(layerToFeature),
       },
-      photos: [] as string[],
+      photoKeys: photos
+        .filter((p): p is typeof p & { photoKey: string } => p.status === "done" && !!p.photoKey)
+        .map((p) => p.photoKey),
     };
     console.log("[mock] New event payload:", payload);
     setPhase("submitted");
   }
+
+  const photosUploading = photos.some((p) => p.status === "uploading");
 
   const stepValidity: Record<number, boolean> = {
     1: title.trim().length > 0 && startAt.length > 0,
@@ -229,7 +234,12 @@ export function CreateEventWizard() {
               <ChevronRight className="size-4" />
             </Button>
           ) : (
-            <Button type="button" onClick={handleSubmit} className="gap-1.5">
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={photosUploading}
+              className="gap-1.5"
+            >
               <Check className="size-4" />
               {t("myPage.createEvent")}
             </Button>

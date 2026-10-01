@@ -221,6 +221,7 @@ export const translations = {
         coverBadge: "대표",
         addPhoto: "사진 추가",
         photosHint: "첫 번째 사진이 이벤트 대표 이미지로 사용됩니다.",
+        photoUploadFailed: "업로드 실패",
         descriptionLabel: "설명",
         descriptionPlaceholder:
           "이벤트가 어떤 자리인지, 누가 오면 좋을지, 무엇을 기대할 수 있는지 알려주세요. 이 내용이 이벤트 페이지에 표시됩니다.",
@@ -543,6 +544,7 @@ export const translations = {
         coverBadge: "Cover",
         addPhoto: "Add photo",
         photosHint: "The first photo is used as the event cover image.",
+        photoUploadFailed: "Upload failed",
         descriptionLabel: "Description",
         descriptionPlaceholder:
           "Tell people what the event is about, who should come, and what to expect. This is what shows on the event page.",

@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { CalendarClock, ImagePlus, Star, X } from "lucide-react";
+import { AlertCircle, CalendarClock, ImagePlus, Loader2, Star, X } from "lucide-react";
 import { useEventDraftStore } from "@/stores/useEventDraftStore";
+import { photosService } from "@/features/events/services/photosService";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 
 const fieldClass =
@@ -19,6 +20,7 @@ export function Step1Setup() {
   const setTags = useEventDraftStore((s) => s.setTags);
   const photos = useEventDraftStore((s) => s.photos);
   const setPhotos = useEventDraftStore((s) => s.setPhotos);
+  const updatePhoto = useEventDraftStore((s) => s.updatePhoto);
   const setMainPhoto = useEventDraftStore((s) => s.setMainPhoto);
 
   const [tagInput, setTagInput] = useState("");
@@ -35,22 +37,34 @@ export function Step1Setup() {
     setTags((prev) => prev.filter((t) => t !== tag));
   }
 
+  function uploadPhoto(id: string, file: File) {
+    photosService
+      .uploadPhoto(file)
+      .then(({ photoKey, previewUrl }) => {
+        const prevUrl = useEventDraftStore.getState().photos.find((p) => p.id === id)?.url;
+        updatePhoto(id, { url: previewUrl, photoKey, status: "done" });
+        if (prevUrl?.startsWith("blob:")) URL.revokeObjectURL(prevUrl);
+      })
+      .catch(() => updatePhoto(id, { status: "error" }));
+  }
+
   function addPhotos(files: FileList | null) {
     if (!files) return;
-    const next = Array.from(files)
-      .filter((f) => f.type.startsWith("image/"))
-      .map((f) => ({
-        id: `${f.name}-${f.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
-        url: URL.createObjectURL(f),
-        name: f.name,
-      }));
+    const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    const next = imageFiles.map((f) => ({
+      id: `${f.name}-${f.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
+      url: URL.createObjectURL(f),
+      name: f.name,
+      status: "uploading" as const,
+    }));
     setPhotos((prev) => [...prev, ...next]);
+    next.forEach((photo, i) => uploadPhoto(photo.id, imageFiles[i]));
   }
 
   function removePhoto(id: string) {
     setPhotos((prev) => {
       const target = prev.find((p) => p.id === id);
-      if (target) URL.revokeObjectURL(target.url);
+      if (target?.url.startsWith("blob:")) URL.revokeObjectURL(target.url);
       return prev.filter((p) => p.id !== id);
     });
   }
@@ -145,25 +159,44 @@ export function Step1Setup() {
               className="group relative size-28 overflow-hidden rounded-xl border border-border bg-muted"
             >
               <img src={p.url || "/placeholder.svg"} alt={p.name} className="size-full object-cover" />
-              {i === 0 ? (
-                <span className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
-                  <Star className="size-2.5 fill-current" />
-                  {t("mypage.create.coverBadge")}
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setMainPhoto(p.id)}
-                  className="absolute left-1.5 top-1.5 rounded-md bg-background/90 px-1.5 py-0.5 text-[10px] font-medium text-foreground opacity-0 shadow transition group-hover:opacity-100"
-                >
-                  {t("mypage.create.setAsCover")}
-                </button>
+              {p.status === "uploading" && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+                  <Loader2 className="size-5 animate-spin text-primary" />
+                </div>
               )}
+              {p.status === "error" && (
+                <div
+                  title={t("mypage.create.photoUploadFailed")}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-destructive/15"
+                >
+                  <AlertCircle className="size-5 text-destructive" />
+                  <span className="text-[10px] font-medium text-destructive">
+                    {t("mypage.create.photoUploadFailed")}
+                  </span>
+                </div>
+              )}
+              {p.status === "done" &&
+                (i === 0 ? (
+                  <span className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                    <Star className="size-2.5 fill-current" />
+                    {t("mypage.create.coverBadge")}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setMainPhoto(p.id)}
+                    className="absolute left-1.5 top-1.5 rounded-md bg-background/90 px-1.5 py-0.5 text-[10px] font-medium text-foreground opacity-0 shadow transition group-hover:opacity-100"
+                  >
+                    {t("mypage.create.setAsCover")}
+                  </button>
+                ))}
               <button
                 type="button"
                 onClick={() => removePhoto(p.id)}
                 aria-label={`Remove ${p.name}`}
-                className="absolute right-1.5 top-1.5 flex size-6 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow transition group-hover:opacity-100"
+                className={`absolute right-1.5 top-1.5 flex size-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow transition group-hover:opacity-100 ${
+                  p.status === "done" ? "opacity-0" : "opacity-100"
+                }`}
               >
                 <X className="size-3.5" />
               </button>
