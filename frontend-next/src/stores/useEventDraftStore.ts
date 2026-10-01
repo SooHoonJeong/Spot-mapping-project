@@ -18,6 +18,8 @@ interface EventDraftState {
   startAt: string;
   location: SelectedLocation | null;
   detailAddress: string;
+  price: number | null;
+  maxAttendees: number | null;
   photos: DraftPhoto[];
   layers: BoundaryLayer[];
   groups: LayerGroup[];
@@ -28,6 +30,8 @@ interface EventDraftState {
   setStartAt: (v: string) => void;
   setLocation: (v: SelectedLocation | null) => void;
   setDetailAddress: (v: string) => void;
+  setPrice: (v: number | null) => void;
+  setMaxAttendees: (v: number | null) => void;
   setPhotos: (updater: DraftPhoto[] | ((prev: DraftPhoto[]) => DraftPhoto[])) => void;
   updatePhoto: (id: string, patch: Partial<DraftPhoto>) => void;
   // Moves the given photo to the front of the array — the first photo is always treated as the
@@ -49,6 +53,8 @@ export const useEventDraftStore = create<EventDraftState>((set, get) => ({
   startAt: "",
   location: null,
   detailAddress: "",
+  price: null,
+  maxAttendees: null,
   photos: [],
   layers: [],
   groups: [],
@@ -60,6 +66,8 @@ export const useEventDraftStore = create<EventDraftState>((set, get) => ({
   setStartAt: (startAt) => set({ startAt }),
   setLocation: (location) => set({ location }),
   setDetailAddress: (detailAddress) => set({ detailAddress }),
+  setPrice: (price) => set({ price }),
+  setMaxAttendees: (maxAttendees) => set({ maxAttendees }),
   setPhotos: (updater) =>
     set({ photos: typeof updater === "function" ? updater(get().photos) : updater }),
   updatePhoto: (id, patch) =>
@@ -84,6 +92,8 @@ export const useEventDraftStore = create<EventDraftState>((set, get) => ({
       startAt: "",
       location: null,
       detailAddress: "",
+      price: null,
+      maxAttendees: null,
       photos: [],
       layers: [],
       groups: [],

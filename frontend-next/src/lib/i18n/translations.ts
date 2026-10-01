@@ -172,6 +172,10 @@ export const translations = {
         tagsPlaceholder: "태그를 입력하고 Enter (예: 음악, 야외)",
         tagRemove: "{tag} 태그 제거",
         startAtLabel: "시작 일시",
+        priceLabel: "참가 비용 (원)",
+        pricePlaceholder: "무료면 비워두세요",
+        maxAttendeesLabel: "최대 참여 인원",
+        maxAttendeesPlaceholder: "제한 없으면 비워두세요",
         locationLabel: "위치",
         locationSearchPlaceholder: "장소, 주소, 건물명을 검색하세요…",
         selectedPoint: "선택한 지점",
@@ -236,6 +240,9 @@ export const translations = {
         successDescription:
           "\"{title}\" 이벤트가 생성되어 게시할 준비가 됐어요. 마이페이지에서 언제든 관리할 수 있습니다.",
         createAnother: "새로 만들기",
+        viewEvent: "이벤트 보기",
+        submitting: "등록 중…",
+        submitError: "이벤트를 등록하지 못했어요. 잠시 후 다시 시도해주세요.",
       },
       edit: {
         backToMyPage: "마이페이지로 돌아가기",
@@ -261,6 +268,11 @@ export const translations = {
         saveSuccess: "저장되었습니다.",
         saveError: "저장하지 못했어요. 잠시 후 다시 시도해주세요.",
       },
+    },
+    eventDetail: {
+      maxAttendees: "최대 {count}명",
+      free: "무료",
+      price: "{price}원",
     },
     auth: {
       login: {
@@ -495,6 +507,10 @@ export const translations = {
         tagsPlaceholder: "Type a tag and press Enter (e.g. music, outdoor)",
         tagRemove: "Remove {tag} tag",
         startAtLabel: "Start date & time",
+        priceLabel: "Admission fee (KRW)",
+        pricePlaceholder: "Leave blank if free",
+        maxAttendeesLabel: "Max attendees",
+        maxAttendeesPlaceholder: "Leave blank for no limit",
         locationLabel: "Location",
         locationSearchPlaceholder: "Search a place, address or building…",
         selectedPoint: "Selected point",
@@ -559,6 +575,9 @@ export const translations = {
         successDescription:
           '"{title}" has been created and is ready to be published. You can manage it any time from My Page.',
         createAnother: "Create another",
+        viewEvent: "View event",
+        submitting: "Submitting…",
+        submitError: "Couldn't create the event. Please try again shortly.",
       },
       edit: {
         backToMyPage: "Back to My Page",
@@ -584,6 +603,11 @@ export const translations = {
         saveSuccess: "Saved.",
         saveError: "Couldn't save. Please try again shortly.",
       },
+    },
+    eventDetail: {
+      maxAttendees: "Up to {count}",
+      free: "Free",
+      price: "₩{price}",
     },
     auth: {
       login: {

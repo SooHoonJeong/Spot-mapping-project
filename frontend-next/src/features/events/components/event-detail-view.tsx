@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import DOMPurify from "dompurify";
-import { Calendar, MapPin, Tag } from "lucide-react";
+import { Calendar, MapPin, Tag, Users, Wallet } from "lucide-react";
 import type { BoundaryLayer } from "@/features/mypage/lib/location";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 
@@ -10,6 +10,7 @@ const EventStaticMap = dynamic(() => import("./event-static-map"), { ssr: false 
 
 // Shared by the real /events/[id] page and the create-event wizard's preview step, so a host
 // can trust that what they see while creating an event is what visitors will actually see.
+// lat/lng/layers are null/empty for an ONLINE event, which has no location.
 export type EventDetailData = {
   title: string;
   descriptionHtml: string;
@@ -19,10 +20,12 @@ export type EventDetailData = {
   address: string;
   building: string;
   detailAddress: string;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
   photos: string[];
   layers: BoundaryLayer[];
+  price?: number | null;
+  maxAttendees?: number | null;
 };
 
 export function EventDetailView({ event }: { event: EventDetailData }) {
@@ -74,10 +77,26 @@ export function EventDetailView({ event }: { event: EventDetailData }) {
             {event.startAt}
           </span>
         )}
-        <span className="flex items-center gap-2">
-          <MapPin className="size-4 text-primary" />
-          {[event.building, event.detailAddress, event.address].filter(Boolean).join(" · ")}
-        </span>
+        {(event.building || event.detailAddress || event.address) && (
+          <span className="flex items-center gap-2">
+            <MapPin className="size-4 text-primary" />
+            {[event.building, event.detailAddress, event.address].filter(Boolean).join(" · ")}
+          </span>
+        )}
+        {event.maxAttendees != null && (
+          <span className="flex items-center gap-2">
+            <Users className="size-4 text-primary" />
+            {t("eventDetail.maxAttendees", { count: event.maxAttendees })}
+          </span>
+        )}
+        {event.price != null && (
+          <span className="flex items-center gap-2">
+            <Wallet className="size-4 text-primary" />
+            {event.price === 0
+              ? t("eventDetail.free")
+              : t("eventDetail.price", { price: event.price.toLocaleString() })}
+          </span>
+        )}
       </div>
 
       {safeDescription && (
@@ -87,14 +106,16 @@ export function EventDetailView({ event }: { event: EventDetailData }) {
         />
       )}
 
-      <div className="mt-8">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-primary">
-          {t("mypage.create.mapLabel")}
-        </h2>
-        <div className="mt-3 h-72 overflow-hidden rounded-2xl border border-border shadow-sm">
-          <EventStaticMap center={{ lat: event.lat, lng: event.lng }} layers={event.layers} />
+      {event.lat != null && event.lng != null && (
+        <div className="mt-8">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-primary">
+            {t("mypage.create.mapLabel")}
+          </h2>
+          <div className="mt-3 h-72 overflow-hidden rounded-2xl border border-border shadow-sm">
+            <EventStaticMap center={{ lat: event.lat, lng: event.lng }} layers={event.layers} />
+          </div>
         </div>
-      </div>
+      )}
 
       {event.photos.length > 1 && (
         <div className="mt-8 grid grid-cols-3 gap-2 sm:grid-cols-4">

@@ -22,8 +22,24 @@ export interface EventListResult {
   hasNext: boolean;
 }
 
-// TODO: 백엔드 스펙 미확정 — GET /api/events/{id}가 실제로 이 경로/모양인지 확인 필요.
-// POST /api/events 요청 스펙과 대칭이 되도록 가정해서 만들어둠(location 중첩, areas GeoJSON 등).
+export interface EventArea {
+  id: number;
+  name: string;
+  color: string;
+  shape: "AREA" | "LINE";
+  areaGroupId: number | null;
+  geometry: { type: string; coordinates: number[][][] | number[][] };
+}
+
+export interface EventAreaGroup {
+  id: number;
+  name: string;
+  color: string;
+}
+
+// GET /api/events/{id}는 POST /api/events의 응답과 같은 모양이라고 가정 — 백엔드팀이 둘을
+// 같은 리소스 표현으로 맞춰준다고 확인해줌. format이 "ONLINE"이면 location/areaGroups/areas는
+// null 또는 빈 배열로 온다.
 export interface EventDetailResponse {
   id: number;
   title: string;
@@ -31,14 +47,44 @@ export interface EventDetailResponse {
   tags: string[];
   region: string;
   startAt: string;
+  format: "OFFLINE" | "ONLINE";
   location: {
     address: string;
     building: string;
     detailAddress: string;
     lat: number;
     lng: number;
+  } | null;
+  areaGroups: EventAreaGroup[];
+  areas: EventArea[];
+  // 오프라인 응답 예시는 photoUrls, 온라인 응답 예시는 photos로 와서 필드명이 일관되지 않음 —
+  // 백엔드에 확인 필요. 우선 둘 다 방어적으로 처리.
+  photoUrls?: string[];
+  photos?: string[];
+  price: number | null;
+  maxAttendees: number | null;
+}
+
+export function eventPhotoUrls(event: Pick<EventDetailResponse, "photoUrls" | "photos">): string[] {
+  return event.photoUrls ?? event.photos ?? [];
+}
+
+export interface CreateEventRequest {
+  title: string;
+  description: string;
+  tags: string[];
+  region: string;
+  startAt: string;
+  format: "OFFLINE" | "ONLINE";
+  location?: {
+    address: string;
+    building: string;
+    detailAddress: string;
+    lat: number;
+    lng: number;
   };
-  areas: {
+  areaGroups?: { tempId: string; name: string; color: string }[];
+  areas?: {
     type: "FeatureCollection";
     features: {
       type: "Feature";
@@ -46,7 +92,9 @@ export interface EventDetailResponse {
       properties: { name: string; color: string; shape: "area" | "line"; groupTempId?: string };
     }[];
   };
-  photos: string[];
+  photoKeys?: string[];
+  price?: number | null;
+  maxAttendees?: number | null;
 }
 
 export const eventsService = {
@@ -57,6 +105,11 @@ export const eventsService = {
 
   async getEventById(id: number | string) {
     const response = await API.get(`/api/events/${id}`);
+    return response.data.data as EventDetailResponse;
+  },
+
+  async createEvent(payload: CreateEventRequest) {
+    const response = await API.post("/api/events", payload);
     return response.data.data as EventDetailResponse;
   },
 };

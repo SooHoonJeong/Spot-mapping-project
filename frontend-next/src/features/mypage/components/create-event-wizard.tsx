@@ -6,6 +6,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { Check, ChevronLeft, ChevronRight, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEventDraftStore } from "@/stores/useEventDraftStore";
+import { eventsService } from "@/features/events/services/eventsService";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 import { EventTypeSelect } from "./wizard/event-type-select";
 import { Step1Setup } from "./wizard/step-1-setup";
@@ -30,10 +31,15 @@ export function CreateEventWizard() {
   const layers = useEventDraftStore((s) => s.layers);
   const groups = useEventDraftStore((s) => s.groups);
   const photos = useEventDraftStore((s) => s.photos);
+  const price = useEventDraftStore((s) => s.price);
+  const maxAttendees = useEventDraftStore((s) => s.maxAttendees);
 
   const [phase, setPhase] = useState<Phase>("type");
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [createdEventId, setCreatedEventId] = useState<number | null>(null);
 
   function openCancelDialog() {
     setCancelDialogOpen(true);
@@ -76,10 +82,9 @@ export function CreateEventWizard() {
     };
   }
 
-  // TODO: mock submission — 이벤트 생성 API(POST /api/events) 엔드포인트가 아직 없어서 실제로
-  // 전송하지 않음. 사진 업로드(POST /api/events/photos)는 연결 완료 — photoKeys에 업로드된
-  // photoKey들을 담아 보낸다.
-  function handleSubmit() {
+  // 지금은 "단순 이벤트 확인/신청"(행사 진행 가능 타입은 준비중) 경로만 있어서 항상
+  // format: "OFFLINE"으로 보낸다. ONLINE 등록은 추후 별도 플로우로 추가될 예정.
+  async function handleSubmit() {
     if (!location) return;
     const validLayers = layers.filter((l) => l.points.length >= (l.shape === "area" ? 3 : 2));
     const payload = {
@@ -88,6 +93,7 @@ export function CreateEventWizard() {
       tags,
       region: location.region,
       startAt: startAt.length === 16 ? `${startAt}:00` : startAt,
+      format: "OFFLINE" as const,
       location: {
         address: location.address,
         building: location.building,
@@ -103,9 +109,20 @@ export function CreateEventWizard() {
       photoKeys: photos
         .filter((p): p is typeof p & { photoKey: string } => p.status === "done" && !!p.photoKey)
         .map((p) => p.photoKey),
+      price,
+      maxAttendees,
     };
-    console.log("[mock] New event payload:", payload);
-    setPhase("submitted");
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      const created = await eventsService.createEvent(payload);
+      setCreatedEventId(created.id);
+      setPhase("submitted");
+    } catch {
+      setSubmitError(t("mypage.create.submitError"));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const photosUploading = photos.some((p) => p.status === "uploading");
@@ -129,7 +146,15 @@ export function CreateEventWizard() {
         <p className="mt-2 text-pretty text-muted-foreground">
           {t("mypage.create.successDescription", { title })}
         </p>
-        <div className="mt-6 flex justify-center gap-3">
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          {createdEventId != null && (
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/events/${createdEventId}`)}
+            >
+              {t("mypage.create.viewEvent")}
+            </Button>
+          )}
           <Button onClick={() => router.push("/my-page")}>
             {t("mypage.create.backToMyPage")}
           </Button>
@@ -201,6 +226,12 @@ export function CreateEventWizard() {
         {phase === 4 && <Step4Preview />}
       </div>
 
+      {submitError && (
+        <p className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+          {submitError}
+        </p>
+      )}
+
       <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
         <div className="flex gap-3">
           <Button type="button" variant="ghost" onClick={openCancelDialog}>
@@ -237,11 +268,11 @@ export function CreateEventWizard() {
             <Button
               type="button"
               onClick={handleSubmit}
-              disabled={photosUploading}
+              disabled={photosUploading || submitting}
               className="gap-1.5"
             >
               <Check className="size-4" />
-              {t("myPage.createEvent")}
+              {submitting ? t("mypage.create.submitting") : t("myPage.createEvent")}
             </Button>
           )}
         </div>

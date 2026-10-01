@@ -18,6 +18,10 @@ export function Step1Setup() {
   const setStartAt = useEventDraftStore((s) => s.setStartAt);
   const tags = useEventDraftStore((s) => s.tags);
   const setTags = useEventDraftStore((s) => s.setTags);
+  const price = useEventDraftStore((s) => s.price);
+  const setPrice = useEventDraftStore((s) => s.setPrice);
+  const maxAttendees = useEventDraftStore((s) => s.maxAttendees);
+  const setMaxAttendees = useEventDraftStore((s) => s.setMaxAttendees);
   const photos = useEventDraftStore((s) => s.photos);
   const setPhotos = useEventDraftStore((s) => s.setPhotos);
   const updatePhoto = useEventDraftStore((s) => s.updatePhoto);
@@ -137,6 +141,41 @@ export function Step1Setup() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="price" className={labelClass}>
+            {t("mypage.create.priceLabel")}
+          </label>
+          <input
+            id="price"
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={price ?? ""}
+            onChange={(e) => setPrice(e.target.value === "" ? null : Number(e.target.value))}
+            placeholder={t("mypage.create.pricePlaceholder")}
+            className={fieldClass}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="maxAttendees" className={labelClass}>
+            {t("mypage.create.maxAttendeesLabel")}
+          </label>
+          <input
+            id="maxAttendees"
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={maxAttendees ?? ""}
+            onChange={(e) =>
+              setMaxAttendees(e.target.value === "" ? null : Number(e.target.value))
+            }
+            placeholder={t("mypage.create.maxAttendeesPlaceholder")}
+            className={fieldClass}
+          />
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">

@@ -15,6 +15,8 @@ export function Step4Preview() {
   const detailAddress = useEventDraftStore((s) => s.detailAddress);
   const photos = useEventDraftStore((s) => s.photos);
   const layers = useEventDraftStore((s) => s.layers);
+  const price = useEventDraftStore((s) => s.price);
+  const maxAttendees = useEventDraftStore((s) => s.maxAttendees);
 
   return (
     <div className="flex flex-col gap-4">
@@ -33,10 +35,12 @@ export function Step4Preview() {
             address: location?.address ?? "",
             building: location?.building ?? "",
             detailAddress,
-            lat: location?.lat ?? 0,
-            lng: location?.lng ?? 0,
+            lat: location?.lat ?? null,
+            lng: location?.lng ?? null,
             photos: photos.map((p) => p.url),
             layers,
+            price,
+            maxAttendees,
           }}
         />
       </div>
