@@ -4,7 +4,6 @@ import { use, useEffect, useState } from "react";
 import { PageShell } from "@/components/page-shell";
 import {
   eventsService,
-  eventPhotoUrls,
   type EventDetailResponse,
 } from "@/features/events/services/eventsService";
 import { EventDetailView } from "@/features/events/components/event-detail-view";
@@ -87,7 +86,7 @@ export default function EventDetailPage({
             detailAddress: event.location?.detailAddress ?? "",
             lat: event.location?.lat ?? null,
             lng: event.location?.lng ?? null,
-            photos: eventPhotoUrls(event),
+            photos: event.photoUrls,
             layers: event.location ? areasToLayers(event.areas) : [],
             price: event.price,
             maxAttendees: event.maxAttendees,

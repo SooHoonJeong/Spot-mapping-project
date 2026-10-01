@@ -57,16 +57,9 @@ export interface EventDetailResponse {
   } | null;
   areaGroups: EventAreaGroup[];
   areas: EventArea[];
-  // 오프라인 응답 예시는 photoUrls, 온라인 응답 예시는 photos로 와서 필드명이 일관되지 않음 —
-  // 백엔드에 확인 필요. 우선 둘 다 방어적으로 처리.
-  photoUrls?: string[];
-  photos?: string[];
+  photoUrls: string[];
   price: number | null;
   maxAttendees: number | null;
-}
-
-export function eventPhotoUrls(event: Pick<EventDetailResponse, "photoUrls" | "photos">): string[] {
-  return event.photoUrls ?? event.photos ?? [];
 }
 
 export interface CreateEventRequest {
