@@ -88,10 +88,13 @@ export function CreateEventWizard() {
     };
   }
 
-  // ONLINE 등록은 location/areaGroups/areas/photoKeys/price/maxAttendees를 아예 받지 않는
-  // 별도 스펙이라, 공통 필드만 담아 보낸다.
+  // ONLINE 등록은 location/areaGroups/areas/price/maxAttendees를 받지 않는 별도 스펙이지만,
+  // photoKeys는 포맷과 무관하게 공통으로 보낸다.
   async function handleSubmit() {
     const startAtValue = startAt.length === 16 ? `${startAt}:00` : startAt;
+    const photoKeys = photos
+      .filter((p): p is typeof p & { photoKey: string } => p.status === "done" && !!p.photoKey)
+      .map((p) => p.photoKey);
 
     let payload;
     if (format === "ONLINE") {
@@ -102,6 +105,7 @@ export function CreateEventWizard() {
         region: onlineRegion,
         startAt: startAtValue,
         format: "ONLINE" as const,
+        photoKeys,
       };
     } else {
       if (!location) return;
@@ -125,9 +129,7 @@ export function CreateEventWizard() {
           type: "FeatureCollection" as const,
           features: validLayers.map(layerToFeature),
         },
-        photoKeys: photos
-          .filter((p): p is typeof p & { photoKey: string } => p.status === "done" && !!p.photoKey)
-          .map((p) => p.photoKey),
+        photoKeys,
         price,
         maxAttendees,
       };
@@ -146,7 +148,7 @@ export function CreateEventWizard() {
     }
   }
 
-  const photosUploading = format === "OFFLINE" && photos.some((p) => p.status === "uploading");
+  const photosUploading = photos.some((p) => p.status === "uploading");
 
   const stepKeyValidity: Record<(typeof stepKeys)[number], boolean> = {
     setup:

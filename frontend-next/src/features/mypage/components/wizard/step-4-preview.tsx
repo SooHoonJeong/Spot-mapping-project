@@ -41,7 +41,7 @@ export function Step4Preview() {
             detailAddress: isOnline ? "" : detailAddress,
             lat: isOnline ? null : (location?.lat ?? null),
             lng: isOnline ? null : (location?.lng ?? null),
-            photos: isOnline ? [] : photos.map((p) => p.url),
+            photos: photos.map((p) => p.url),
             layers: isOnline ? [] : layers,
             price: isOnline ? null : price,
             maxAttendees: isOnline ? null : maxAttendees,

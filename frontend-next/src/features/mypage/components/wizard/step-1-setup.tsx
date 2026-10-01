@@ -240,7 +240,6 @@ export function Step1Setup() {
       </div>
       )}
 
-      {format === "OFFLINE" && (
       <div className="flex flex-col gap-2">
         <label className={labelClass}>{t("mypage.create.photosLabel")}</label>
         <input
@@ -315,7 +314,6 @@ export function Step1Setup() {
         </div>
         <p className="text-xs text-muted-foreground">{t("mypage.create.photosHint")}</p>
       </div>
-      )}
     </div>
   );
 }
