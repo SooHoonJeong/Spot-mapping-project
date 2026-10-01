@@ -166,6 +166,11 @@ export const translations = {
         },
         stepBack: "이전",
         stepNext: "다음",
+        formatLabel: "진행 방식",
+        formatOffline: "오프라인",
+        formatOnline: "온라인",
+        onlineRegionLabel: "지역",
+        onlineRegionPlaceholder: "예: 전국, 서울 등",
         titleLabel: "제목",
         titlePlaceholder: "예: 선셋 루프탑 소셜",
         tagsLabel: "태그",
@@ -273,6 +278,7 @@ export const translations = {
       maxAttendees: "최대 {count}명",
       free: "무료",
       price: "{price}원",
+      onlineLocation: "온라인 · {region}",
     },
     auth: {
       login: {
@@ -501,6 +507,11 @@ export const translations = {
         },
         stepBack: "Back",
         stepNext: "Next",
+        formatLabel: "Format",
+        formatOffline: "In person",
+        formatOnline: "Online",
+        onlineRegionLabel: "Region",
+        onlineRegionPlaceholder: "e.g. Nationwide, Seoul",
         titleLabel: "Title",
         titlePlaceholder: "e.g. Sunset Rooftop Social",
         tagsLabel: "Tags",
@@ -608,6 +619,7 @@ export const translations = {
       maxAttendees: "Up to {count}",
       free: "Free",
       price: "₩{price}",
+      onlineLocation: "Online · {region}",
     },
     auth: {
       login: {

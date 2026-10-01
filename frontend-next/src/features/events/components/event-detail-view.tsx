@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import DOMPurify from "dompurify";
-import { Calendar, MapPin, Tag, Users, Wallet } from "lucide-react";
+import { Calendar, Globe2, MapPin, Tag, Users, Wallet } from "lucide-react";
 import type { BoundaryLayer } from "@/features/mypage/lib/location";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 
@@ -77,11 +77,18 @@ export function EventDetailView({ event }: { event: EventDetailData }) {
             {event.startAt}
           </span>
         )}
-        {(event.building || event.detailAddress || event.address) && (
+        {event.building || event.detailAddress || event.address ? (
           <span className="flex items-center gap-2">
             <MapPin className="size-4 text-primary" />
             {[event.building, event.detailAddress, event.address].filter(Boolean).join(" · ")}
           </span>
+        ) : (
+          event.region && (
+            <span className="flex items-center gap-2">
+              <Globe2 className="size-4 text-primary" />
+              {t("eventDetail.onlineLocation", { region: event.region })}
+            </span>
+          )
         )}
         {event.maxAttendees != null && (
           <span className="flex items-center gap-2">

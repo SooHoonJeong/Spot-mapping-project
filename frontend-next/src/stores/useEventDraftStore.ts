@@ -16,6 +16,10 @@ interface EventDraftState {
   description: string;
   tags: string[];
   startAt: string;
+  // "ONLINE" events skip location/areas/price/maxAttendees/photos entirely — POST /api/events
+  // doesn't even accept those fields for an online registration.
+  format: "OFFLINE" | "ONLINE";
+  onlineRegion: string;
   location: SelectedLocation | null;
   detailAddress: string;
   price: number | null;
@@ -28,6 +32,8 @@ interface EventDraftState {
   setDescription: (v: string) => void;
   setTags: (updater: string[] | ((prev: string[]) => string[])) => void;
   setStartAt: (v: string) => void;
+  setFormat: (v: "OFFLINE" | "ONLINE") => void;
+  setOnlineRegion: (v: string) => void;
   setLocation: (v: SelectedLocation | null) => void;
   setDetailAddress: (v: string) => void;
   setPrice: (v: number | null) => void;
@@ -51,6 +57,8 @@ export const useEventDraftStore = create<EventDraftState>((set, get) => ({
   description: "",
   tags: [],
   startAt: "",
+  format: "OFFLINE",
+  onlineRegion: "",
   location: null,
   detailAddress: "",
   price: null,
@@ -64,6 +72,8 @@ export const useEventDraftStore = create<EventDraftState>((set, get) => ({
   setTags: (updater) =>
     set({ tags: typeof updater === "function" ? updater(get().tags) : updater }),
   setStartAt: (startAt) => set({ startAt }),
+  setFormat: (format) => set({ format }),
+  setOnlineRegion: (onlineRegion) => set({ onlineRegion }),
   setLocation: (location) => set({ location }),
   setDetailAddress: (detailAddress) => set({ detailAddress }),
   setPrice: (price) => set({ price }),
@@ -90,6 +100,8 @@ export const useEventDraftStore = create<EventDraftState>((set, get) => ({
       description: "",
       tags: [],
       startAt: "",
+      format: "OFFLINE",
+      onlineRegion: "",
       location: null,
       detailAddress: "",
       price: null,

@@ -16,7 +16,9 @@ import { Step4Preview } from "./wizard/step-4-preview";
 
 type Phase = "type" | 1 | 2 | 3 | 4 | "submitted";
 
-const STEP_KEYS = ["setup", "details", "map", "preview"] as const;
+// ONLINE events have no map step — there's nothing to locate.
+const OFFLINE_STEP_KEYS = ["setup", "details", "map", "preview"] as const;
+const ONLINE_STEP_KEYS = ["setup", "details", "preview"] as const;
 
 export function CreateEventWizard() {
   const { t } = useTranslation();
@@ -26,6 +28,8 @@ export function CreateEventWizard() {
   const description = useEventDraftStore((s) => s.description);
   const tags = useEventDraftStore((s) => s.tags);
   const startAt = useEventDraftStore((s) => s.startAt);
+  const format = useEventDraftStore((s) => s.format);
+  const onlineRegion = useEventDraftStore((s) => s.onlineRegion);
   const location = useEventDraftStore((s) => s.location);
   const detailAddress = useEventDraftStore((s) => s.detailAddress);
   const layers = useEventDraftStore((s) => s.layers);
@@ -33,6 +37,8 @@ export function CreateEventWizard() {
   const photos = useEventDraftStore((s) => s.photos);
   const price = useEventDraftStore((s) => s.price);
   const maxAttendees = useEventDraftStore((s) => s.maxAttendees);
+
+  const stepKeys = format === "ONLINE" ? ONLINE_STEP_KEYS : OFFLINE_STEP_KEYS;
 
   const [phase, setPhase] = useState<Phase>("type");
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -82,36 +88,51 @@ export function CreateEventWizard() {
     };
   }
 
-  // 지금은 "단순 이벤트 확인/신청"(행사 진행 가능 타입은 준비중) 경로만 있어서 항상
-  // format: "OFFLINE"으로 보낸다. ONLINE 등록은 추후 별도 플로우로 추가될 예정.
+  // ONLINE 등록은 location/areaGroups/areas/photoKeys/price/maxAttendees를 아예 받지 않는
+  // 별도 스펙이라, 공통 필드만 담아 보낸다.
   async function handleSubmit() {
-    if (!location) return;
-    const validLayers = layers.filter((l) => l.points.length >= (l.shape === "area" ? 3 : 2));
-    const payload = {
-      title,
-      description,
-      tags,
-      region: location.region,
-      startAt: startAt.length === 16 ? `${startAt}:00` : startAt,
-      format: "OFFLINE" as const,
-      location: {
-        address: location.address,
-        building: location.building,
-        detailAddress,
-        lat: location.lat,
-        lng: location.lng,
-      },
-      areaGroups: groups.map((g) => ({ tempId: String(g.id), name: g.name, color: g.color })),
-      areas: {
-        type: "FeatureCollection" as const,
-        features: validLayers.map(layerToFeature),
-      },
-      photoKeys: photos
-        .filter((p): p is typeof p & { photoKey: string } => p.status === "done" && !!p.photoKey)
-        .map((p) => p.photoKey),
-      price,
-      maxAttendees,
-    };
+    const startAtValue = startAt.length === 16 ? `${startAt}:00` : startAt;
+
+    let payload;
+    if (format === "ONLINE") {
+      payload = {
+        title,
+        description,
+        tags,
+        region: onlineRegion,
+        startAt: startAtValue,
+        format: "ONLINE" as const,
+      };
+    } else {
+      if (!location) return;
+      const validLayers = layers.filter((l) => l.points.length >= (l.shape === "area" ? 3 : 2));
+      payload = {
+        title,
+        description,
+        tags,
+        region: location.region,
+        startAt: startAtValue,
+        format: "OFFLINE" as const,
+        location: {
+          address: location.address,
+          building: location.building,
+          detailAddress,
+          lat: location.lat,
+          lng: location.lng,
+        },
+        areaGroups: groups.map((g) => ({ tempId: String(g.id), name: g.name, color: g.color })),
+        areas: {
+          type: "FeatureCollection" as const,
+          features: validLayers.map(layerToFeature),
+        },
+        photoKeys: photos
+          .filter((p): p is typeof p & { photoKey: string } => p.status === "done" && !!p.photoKey)
+          .map((p) => p.photoKey),
+        price,
+        maxAttendees,
+      };
+    }
+
     setSubmitError(null);
     setSubmitting(true);
     try {
@@ -125,14 +146,21 @@ export function CreateEventWizard() {
     }
   }
 
-  const photosUploading = photos.some((p) => p.status === "uploading");
+  const photosUploading = format === "OFFLINE" && photos.some((p) => p.status === "uploading");
 
-  const stepValidity: Record<number, boolean> = {
-    1: title.trim().length > 0 && startAt.length > 0,
-    2: description.replace(/<[^>]*>/g, "").trim().length > 0,
-    3: location !== null,
-    4: true,
+  const stepKeyValidity: Record<(typeof stepKeys)[number], boolean> = {
+    setup:
+      title.trim().length > 0 &&
+      startAt.length > 0 &&
+      (format === "ONLINE" ? onlineRegion.trim().length > 0 : true),
+    details: description.replace(/<[^>]*>/g, "").trim().length > 0,
+    map: location !== null,
+    preview: true,
   };
+  const stepValidity: Record<number, boolean> = {};
+  stepKeys.forEach((key, index) => {
+    stepValidity[index + 1] = stepKeyValidity[key];
+  });
 
   if (phase === "submitted") {
     return (
@@ -185,7 +213,7 @@ export function CreateEventWizard() {
 
       {/* Stepper */}
       <ol className="mt-6 flex items-center gap-2">
-        {STEP_KEYS.map((key, index) => {
+        {stepKeys.map((key, index) => {
           const stepNumber = index + 1;
           const isCurrent = phase === stepNumber;
           const isDone = typeof phase === "number" && phase > stepNumber;
@@ -211,7 +239,7 @@ export function CreateEventWizard() {
                   {t(`mypage.create.steps.${key}`)}
                 </span>
               </div>
-              {stepNumber < STEP_KEYS.length && (
+              {stepNumber < stepKeys.length && (
                 <div className={`h-0.5 flex-1 ${isDone ? "bg-primary" : "bg-border"}`} />
               )}
             </li>
@@ -220,10 +248,10 @@ export function CreateEventWizard() {
       </ol>
 
       <div className="mt-8 rounded-2xl border border-border bg-card p-6 shadow-sm">
-        {phase === 1 && <Step1Setup />}
-        {phase === 2 && <Step2Details />}
-        {phase === 3 && <Step3Map />}
-        {phase === 4 && <Step4Preview />}
+        {stepKeys[phase - 1] === "setup" && <Step1Setup />}
+        {stepKeys[phase - 1] === "details" && <Step2Details />}
+        {stepKeys[phase - 1] === "map" && <Step3Map />}
+        {stepKeys[phase - 1] === "preview" && <Step4Preview />}
       </div>
 
       {submitError && (
@@ -254,7 +282,7 @@ export function CreateEventWizard() {
               {t("mypage.create.stepBack")}
             </Button>
           )}
-          {phase < 4 ? (
+          {phase < stepKeys.length ? (
             <Button
               type="button"
               onClick={() => setPhase((phase + 1) as Phase)}

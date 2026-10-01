@@ -1,7 +1,16 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { AlertCircle, CalendarClock, ImagePlus, Loader2, Star, X } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarClock,
+  Globe2,
+  ImagePlus,
+  Loader2,
+  MapPin,
+  Star,
+  X,
+} from "lucide-react";
 import { useEventDraftStore } from "@/stores/useEventDraftStore";
 import { photosService } from "@/features/events/services/photosService";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
@@ -16,6 +25,10 @@ export function Step1Setup() {
   const setTitle = useEventDraftStore((s) => s.setTitle);
   const startAt = useEventDraftStore((s) => s.startAt);
   const setStartAt = useEventDraftStore((s) => s.setStartAt);
+  const format = useEventDraftStore((s) => s.format);
+  const setFormat = useEventDraftStore((s) => s.setFormat);
+  const onlineRegion = useEventDraftStore((s) => s.onlineRegion);
+  const setOnlineRegion = useEventDraftStore((s) => s.setOnlineRegion);
   const tags = useEventDraftStore((s) => s.tags);
   const setTags = useEventDraftStore((s) => s.setTags);
   const price = useEventDraftStore((s) => s.price);
@@ -76,6 +89,36 @@ export function Step1Setup() {
   return (
     <div className="grid gap-6">
       <div className="flex flex-col gap-1.5">
+        <label className={labelClass}>{t("mypage.create.formatLabel")}</label>
+        <div className="inline-flex w-fit rounded-lg border border-border bg-secondary/40 p-1">
+          <button
+            type="button"
+            onClick={() => setFormat("OFFLINE")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              format === "OFFLINE"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <MapPin className="size-4" />
+            {t("mypage.create.formatOffline")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setFormat("ONLINE")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              format === "ONLINE"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Globe2 className="size-4" />
+            {t("mypage.create.formatOnline")}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
         <label htmlFor="title" className={labelClass}>
           {t("mypage.create.titleLabel")}
         </label>
@@ -103,6 +146,23 @@ export function Step1Setup() {
           required
         />
       </div>
+
+      {format === "ONLINE" && (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="onlineRegion" className={labelClass}>
+            <Globe2 className="size-4 text-muted-foreground" />
+            {t("mypage.create.onlineRegionLabel")}
+          </label>
+          <input
+            id="onlineRegion"
+            value={onlineRegion}
+            onChange={(e) => setOnlineRegion(e.target.value)}
+            placeholder={t("mypage.create.onlineRegionPlaceholder")}
+            className={fieldClass}
+            required
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="tags" className={labelClass}>
@@ -143,6 +203,7 @@ export function Step1Setup() {
         )}
       </div>
 
+      {format === "OFFLINE" && (
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="price" className={labelClass}>
@@ -177,7 +238,9 @@ export function Step1Setup() {
           />
         </div>
       </div>
+      )}
 
+      {format === "OFFLINE" && (
       <div className="flex flex-col gap-2">
         <label className={labelClass}>{t("mypage.create.photosLabel")}</label>
         <input
@@ -252,6 +315,7 @@ export function Step1Setup() {
         </div>
         <p className="text-xs text-muted-foreground">{t("mypage.create.photosHint")}</p>
       </div>
+      )}
     </div>
   );
 }

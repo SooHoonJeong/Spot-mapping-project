@@ -11,12 +11,16 @@ export function Step4Preview() {
   const description = useEventDraftStore((s) => s.description);
   const tags = useEventDraftStore((s) => s.tags);
   const startAt = useEventDraftStore((s) => s.startAt);
+  const format = useEventDraftStore((s) => s.format);
+  const onlineRegion = useEventDraftStore((s) => s.onlineRegion);
   const location = useEventDraftStore((s) => s.location);
   const detailAddress = useEventDraftStore((s) => s.detailAddress);
   const photos = useEventDraftStore((s) => s.photos);
   const layers = useEventDraftStore((s) => s.layers);
   const price = useEventDraftStore((s) => s.price);
   const maxAttendees = useEventDraftStore((s) => s.maxAttendees);
+
+  const isOnline = format === "ONLINE";
 
   return (
     <div className="flex flex-col gap-4">
@@ -31,16 +35,16 @@ export function Step4Preview() {
             descriptionHtml: description,
             tags,
             startAt,
-            region: location?.region ?? "",
-            address: location?.address ?? "",
-            building: location?.building ?? "",
-            detailAddress,
-            lat: location?.lat ?? null,
-            lng: location?.lng ?? null,
-            photos: photos.map((p) => p.url),
-            layers,
-            price,
-            maxAttendees,
+            region: isOnline ? onlineRegion : (location?.region ?? ""),
+            address: isOnline ? "" : (location?.address ?? ""),
+            building: isOnline ? "" : (location?.building ?? ""),
+            detailAddress: isOnline ? "" : detailAddress,
+            lat: isOnline ? null : (location?.lat ?? null),
+            lng: isOnline ? null : (location?.lng ?? null),
+            photos: isOnline ? [] : photos.map((p) => p.url),
+            layers: isOnline ? [] : layers,
+            price: isOnline ? null : price,
+            maxAttendees: isOnline ? null : maxAttendees,
           }}
         />
       </div>
