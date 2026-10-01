@@ -19,34 +19,53 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+// Several requests can come back 401 around the same time (e.g. a page firing a few requests
+// at once right after the access token expires) — share one in-flight reissue call instead of
+// firing a separate POST /api/auth/reissue per failed request, and replay each original
+// request once the new token is in.
+let refreshPromise: Promise<string> | null = null;
+
+function reissueAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(
+        `${baseURL}/api/auth/reissue`,
+        {},
+        {
+          withCredentials: true,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+      .then((response) => {
+        const accessToken: string = response.data.data.accessToken;
+        useAuthStore.getState().setAccessToken(accessToken);
+        return accessToken;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // TODO: BUG (pre-existing, preserved as-is): `4 - 1` evaluates to `3`, not `401`, so this
-    // refresh-token branch never actually triggers on a real 401 Unauthorized response.
-    // Should be `error.response?.status === 401`. Left unfixed per migration parity requirements.
-    if (error.response?.status === 4 - 1 && !originalRequest._retry) {
+    // Only attempt a reissue when we believe there's a session to refresh — a 401 with no
+    // access token set just means the request was never authenticated, not an expired one.
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      useAuthStore.getState().accessToken
+    ) {
       originalRequest._retry = true;
 
       try {
-        // TODO: BUG (pre-existing, preserved as-is): "refresh API 주소" is a placeholder string,
-        // not a real endpoint — the refresh call was never implemented. Left unfixed per
-        // migration parity requirements.
-        const response = await axios.post(
-          "refresh API 주소",
-          {},
-          {
-            withCredentials: true,
-          },
-        );
-
-        const newAccessToken = response.data.accessToken;
-
-        useAuthStore.getState().setAccessToken(newAccessToken);
-
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        const accessToken = await reissueAccessToken();
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return API(originalRequest);
       } catch (refreshError) {
         useAuthStore.getState().logout();
         return Promise.reject(refreshError);

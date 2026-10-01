@@ -20,10 +20,9 @@ interface AuthState {
   logout: () => void;
 }
 
-// Persisted to localStorage so a page reload doesn't log the user out. This project has no
-// working refresh-token endpoint (see the removed checkLoginStatus effect that used to live in
-// providers.tsx), so keeping the access token in memory only meant every reload required a
-// fresh login.
+// Persisted to localStorage so a page reload doesn't log the user out without first trying
+// POST /api/auth/reissue (see src/api/axios.ts) — the access token here may be stale after a
+// reload, but the response interceptor transparently reissues it on the first 401.
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
