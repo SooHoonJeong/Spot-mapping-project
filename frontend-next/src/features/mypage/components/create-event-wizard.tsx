@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog } from "@base-ui/react/dialog";
 import { Check, ChevronLeft, ChevronRight, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEventDraftStore } from "@/stores/useEventDraftStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { eventsService } from "@/features/events/services/eventsService";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 import { EventTypeSelect } from "./wizard/event-type-select";
@@ -23,6 +24,16 @@ const ONLINE_STEP_KEYS = ["setup", "details", "preview"] as const;
 export function CreateEventWizard() {
   const { t } = useTranslation();
   const router = useRouter();
+
+  // 이벤트 등록은 로그인이 필요하다 — localStorage 복원이 끝난 뒤(hasHydrated)에도 로그인 상태가
+  // 아니면 로그인 페이지로 보내고, 로그인 후 이 페이지로 돌아오도록 next를 넘긴다.
+  const hasHydrated = useAuthStore((s) => s.hasHydrated);
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  useEffect(() => {
+    if (hasHydrated && !isLoggedIn) {
+      router.replace("/login?next=/my-page/create");
+    }
+  }, [hasHydrated, isLoggedIn, router]);
 
   const title = useEventDraftStore((s) => s.title);
   const description = useEventDraftStore((s) => s.description);
@@ -163,6 +174,8 @@ export function CreateEventWizard() {
   stepKeys.forEach((key, index) => {
     stepValidity[index + 1] = stepKeyValidity[key];
   });
+
+  if (!hasHydrated || !isLoggedIn) return null;
 
   if (phase === "submitted") {
     return (

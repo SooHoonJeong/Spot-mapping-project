@@ -40,7 +40,10 @@ export default function LoginForm() {
       const userData = await authService.getProfile();
       useAuthStore.getState().setUser(userData);
 
-      router.replace("/");
+      // 로그인이 필요한 페이지에서 넘어온 경우 원래 가려던 곳으로 돌려보낸다. 내부 경로만 허용
+      // (open redirect 방지).
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
       alert(
         t("auth.login.successAlert", {
           nickname: userData.nickname || t("auth.login.successFallbackName"),
