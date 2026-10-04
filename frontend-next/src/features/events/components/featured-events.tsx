@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, Calendar, MapPin } from "lucide-react";
 import { useEvents } from "../lib/useEvents";
+import { formatStartAt, htmlToPlainText } from "../lib/format";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 
 export function FeaturedEvents() {
@@ -49,12 +50,12 @@ export function FeaturedEvents() {
                   {event.title}
                 </h3>
                 <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                  {event.description}
+                  {htmlToPlainText(event.description)}
                 </p>
                 <div className="mt-3 flex flex-col gap-1 text-xs text-muted-foreground">
                   <span className="flex items-center gap-2">
                     <Calendar className="size-4 text-primary" />
-                    {event.startDate}
+                    {formatStartAt(event.startAt)}
                   </span>
                   <span className="flex items-center gap-2">
                     <MapPin className="size-4 text-primary" />

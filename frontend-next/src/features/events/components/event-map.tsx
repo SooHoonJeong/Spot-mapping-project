@@ -1,10 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import {
+  CircleMarker,
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MAP_CENTER, PIN_COLOR, type AppEvent } from "../lib/events";
+import { formatStartAt } from "../lib/format";
 
 function pinIcon(active: boolean) {
   const size = active ? 42 : 34;
@@ -23,12 +31,24 @@ function pinIcon(active: boolean) {
   });
 }
 
+type MappableEvent = AppEvent & { latitude: number; longitude: number };
+
+function hasCoords(event: AppEvent): event is MappableEvent {
+  return event.latitude != null && event.longitude != null;
+}
+
+export type MapOrigin = { lat: number; lng: number };
+
 function MapController({
   selectedId,
   events,
+  origin,
+  radiusKm,
 }: {
   selectedId: number | null;
-  events: AppEvent[];
+  events: MappableEvent[];
+  origin: MapOrigin | null;
+  radiusKm: number;
 }) {
   const map = useMap();
 
@@ -40,6 +60,49 @@ function MapController({
     }
   }, [selectedId, events, map]);
 
+  // 현재 위치를 알면 그 주변 radiusKm가 화면에 꽉 차게 시작한다(한 변 = 2 × 반경인 정사각형 기준이라
+  // 지도 높이가 작은 모바일에서도 반경이 잘리지 않는다). 필터를 바꿔도 지도는 움직이지 않는다.
+  // 지도 컨테이너는 동적 로딩 직후 크기가 0에 가깝게 잡히는 순간이 있어서, 그때 맞추면 줌이 터무니없이
+  // 작아진다. 크기가 실제로 잡힌 뒤에 맞추고, 사용자가 지도를 직접 만지기 전까지는 크기가 바뀔 때마다
+  // 다시 맞춘다.
+  useEffect(() => {
+    if (!origin) return;
+    const el = map.getContainer();
+    let userMoved = false;
+    const markMoved = () => {
+      userMoved = true;
+    };
+
+    const fit = () => {
+      if (el.clientWidth === 0 || el.clientHeight === 0) return;
+      map.invalidateSize();
+      const bounds = L.latLng(origin.lat, origin.lng).toBounds(radiusKm * 2000);
+      map.fitBounds(bounds, { animate: false });
+    };
+
+    const observer = new ResizeObserver(() => {
+      if (!userMoved) fit();
+    });
+    observer.observe(el);
+    el.addEventListener("pointerdown", markMoved);
+    el.addEventListener("wheel", markMoved, { passive: true });
+    fit();
+
+    return () => {
+      observer.disconnect();
+      el.removeEventListener("pointerdown", markMoved);
+      el.removeEventListener("wheel", markMoved);
+    };
+  }, [origin, radiusKm, map]);
+
+  // 위치를 모를 때만: 목록이 바뀌면 보이는 핀들이 한 화면에 들어오도록 맞춘다.
+  useEffect(() => {
+    if (origin || events.length === 0) return;
+    map.invalidateSize();
+    const bounds = L.latLngBounds(events.map((e) => [e.latitude, e.longitude] as [number, number]));
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+  }, [origin, events, map]);
+
   return null;
 }
 
@@ -47,14 +110,20 @@ export default function EventMap({
   events,
   selectedId,
   onSelect,
+  origin,
+  radiusKm,
 }: {
   events: AppEvent[];
   selectedId: number | null;
   onSelect: (id: number) => void;
+  origin: MapOrigin | null;
+  radiusKm: number;
 }) {
+  const mappableEvents = events.filter(hasCoords);
+
   return (
     <MapContainer
-      center={MAP_CENTER}
+      center={origin ? [origin.lat, origin.lng] : MAP_CENTER}
       zoom={13}
       scrollWheelZoom
       className="h-full w-full"
@@ -64,8 +133,21 @@ export default function EventMap({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <MapController selectedId={selectedId} events={events} />
-      {events.map((ev) => (
+      <MapController
+        selectedId={selectedId}
+        events={mappableEvents}
+        origin={origin}
+        radiusKm={radiusKm}
+      />
+      {origin && (
+        <CircleMarker
+          center={[origin.lat, origin.lng]}
+          radius={7}
+          interactive={false}
+          pathOptions={{ color: "white", weight: 3, fillColor: PIN_COLOR, fillOpacity: 1 }}
+        />
+      )}
+      {mappableEvents.map((ev) => (
         <Marker
           key={ev.id}
           position={[ev.latitude, ev.longitude]}
@@ -73,17 +155,13 @@ export default function EventMap({
           eventHandlers={{ click: () => onSelect(ev.id) }}
         >
           <Popup>
-            <a
-              href={`#event-${ev.id}`}
-              className="block no-underline"
-              onClick={() => onSelect(ev.id)}
-            >
+            <a href={`/events/${ev.id}`} className="block no-underline">
               <div className="p-3">
                 <p className="text-sm font-semibold leading-tight text-foreground">
                   {ev.title}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {ev.region} · {ev.startDate}
+                  {ev.region} · {formatStartAt(ev.startAt)}
                 </p>
               </div>
             </a>

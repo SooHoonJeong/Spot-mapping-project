@@ -5,6 +5,7 @@ import DOMPurify from "dompurify";
 import { Calendar, Globe2, MapPin, Tag, Users, Wallet } from "lucide-react";
 import type { BoundaryLayer } from "@/features/mypage/lib/location";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
+import { formatStartAt } from "../lib/format";
 
 const EventStaticMap = dynamic(() => import("./event-static-map"), { ssr: false });
 
@@ -74,7 +75,7 @@ export function EventDetailView({ event }: { event: EventDetailData }) {
         {event.startAt && (
           <span className="flex items-center gap-2">
             <Calendar className="size-4 text-primary" />
-            {event.startAt}
+            {formatStartAt(event.startAt)}
           </span>
         )}
         {event.building || event.detailAddress || event.address ? (

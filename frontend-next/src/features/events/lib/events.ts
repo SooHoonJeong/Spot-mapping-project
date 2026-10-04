@@ -8,12 +8,14 @@ export type AppEvent = {
   description: string;
   tags: string[];
   region: string;
-  latitude: number;
-  longitude: number;
-  startDate: string;
+  // ONLINE 이벤트는 위치가 없어 null일 수 있다고 가정 (목록 응답 예시는 오프라인만 보여줌).
+  latitude: number | null;
+  longitude: number | null;
+  // 스펙 예시는 startDate("2026-08-01")였지만 실제 서버는 startAt("2026-10-06T11:10:00")을 준다.
+  startAt: string;
 };
 
-// Centered around New York City
-export const MAP_CENTER: [number, number] = [40.7178, -73.9857];
+// Default map center: Seoul
+export const MAP_CENTER: [number, number] = [37.5665, 126.978];
 
 export const PIN_COLOR = "#2451c7";

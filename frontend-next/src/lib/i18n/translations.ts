@@ -35,7 +35,11 @@ export const translations = {
       title: "내 주변에서 열리는 이벤트 둘러보기",
       description:
         "지도에서 이벤트를 살펴보고 핀을 눌러 상세 정보를 확인하세요. 관심사에 맞게 필터링할 수 있습니다.",
-      eventsInArea: "뉴욕 지역 이벤트 {count}개",
+      eventsInArea: "등록된 이벤트 {count}개",
+      eventsNearby: "내 주변 {radius}km 이벤트 {count}개",
+      locating: "현재 위치를 확인하는 중…",
+      locationUnavailable:
+        "현재 위치를 가져오지 못해 등록된 모든 이벤트를 보여드려요. 브라우저의 위치 권한을 확인해주세요.",
       emptyState: "아직 조건에 맞는 이벤트가 없어요. 곧 새로운 이벤트가 올라올 거예요!",
       loadingMap: "지도를 불러오는 중…",
       errorState: "이벤트를 불러오지 못했어요. 잠시 후 다시 시도해주세요.",
@@ -45,6 +49,11 @@ export const translations = {
     },
     eventsBrowser: {
       searchPlaceholder: "이벤트, 장소, 키워드 검색",
+      regionPlaceholder: "지역 (예: 서울)",
+      nearby: "내 주변",
+      locateError: "현재 위치를 가져오지 못했어요. 브라우저의 위치 권한을 확인해주세요.",
+      viewDetail: "자세히 보기",
+      loadMore: "더 보기",
       resultsCount_one: "{count}개 이벤트 찾음",
       resultsCount_other: "{count}개 이벤트 찾음",
       emptyState: "조건에 맞는 이벤트가 없어요. 검색어를 지우거나 다른 태그를 선택해보세요.",
@@ -376,7 +385,11 @@ export const translations = {
       title: "Explore what's happening near you",
       description:
         "Browse events on the map and tap a pin to see the details. Filter by what you're into.",
-      eventsInArea: "{count} events in New York",
+      eventsInArea: "{count} events listed",
+      eventsNearby: "{count} events within {radius}km of you",
+      locating: "Finding your location…",
+      locationUnavailable:
+        "Couldn't get your location, so all events are shown. Check your browser's location permission.",
       emptyState: "No events match your filters yet. Check back soon!",
       loadingMap: "Loading map…",
       errorState: "Couldn't load events. Please try again shortly.",
@@ -386,6 +399,11 @@ export const translations = {
     },
     eventsBrowser: {
       searchPlaceholder: "Search events, venues, keywords",
+      regionPlaceholder: "Region (e.g. Seoul)",
+      nearby: "Near me",
+      locateError: "Couldn't get your location. Check your browser's location permission.",
+      viewDetail: "View details",
+      loadMore: "Load more",
       resultsCount_one: "{count} event found",
       resultsCount_other: "{count} events found",
       emptyState: "No events match your filters. Try clearing the search or picking a different tag.",

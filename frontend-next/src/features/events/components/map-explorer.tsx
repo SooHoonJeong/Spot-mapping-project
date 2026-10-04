@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { MapPin } from "lucide-react";
 import { useEvents } from "../lib/useEvents";
 import { TagFilter } from "./tag-filter";
 import { EventCard } from "./event-card";
+import type { MapOrigin } from "./event-map";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 
 function MapLoadingFallback() {
@@ -22,15 +23,45 @@ const EventMap = dynamic(() => import("./event-map"), {
   loading: MapLoadingFallback,
 });
 
+const NEARBY_RADIUS_KM = 2;
+
 export function MapExplorer() {
   const { t } = useTranslation();
   const [tag, setTag] = useState<string | "All">("All");
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  const { events, totalElements, loading, error } = useEvents({
-    tag: tag === "All" ? undefined : tag,
-    size: 100,
-  });
+  // 지도에 들어오면 현재 위치를 먼저 확인하고, 그 주변 NEARBY_RADIUS_KM 이내 이벤트만 불러온다.
+  // 위치 권한이 없거나 가져오지 못하면 반경 없이 전체 이벤트를 보여준다.
+  const [origin, setOrigin] = useState<MapOrigin | null>(null);
+  const [locationStatus, setLocationStatus] = useState<"locating" | "ready" | "unavailable">(
+    "locating",
+  );
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationStatus("unavailable");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setOrigin({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationStatus("ready");
+      },
+      () => setLocationStatus("unavailable"),
+      { timeout: 8000, maximumAge: 60000 },
+    );
+  }, []);
+
+  const { events, totalElements, loading, error } = useEvents(
+    {
+      tag: tag === "All" ? undefined : tag,
+      lat: origin?.lat,
+      lng: origin?.lng,
+      radius: origin ? NEARBY_RADIUS_KM : undefined,
+      size: 100,
+    },
+    { enabled: locationStatus !== "locating" },
+  );
 
   const availableTags = Array.from(new Set(events.flatMap((e) => e.tags)));
 
@@ -47,9 +78,18 @@ export function MapExplorer() {
         </div>
         <p className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
           <MapPin className="size-4 text-primary" />
-          {t("mapExplorer.eventsInArea", { count: totalElements })}
+          {origin
+            ? t("mapExplorer.eventsNearby", { radius: NEARBY_RADIUS_KM, count: totalElements })
+            : t("mapExplorer.eventsInArea", { count: totalElements })}
         </p>
       </div>
+
+      {locationStatus === "locating" && (
+        <p className="mt-3 text-xs text-muted-foreground">{t("mapExplorer.locating")}</p>
+      )}
+      {locationStatus === "unavailable" && (
+        <p className="mt-3 text-xs text-muted-foreground">{t("mapExplorer.locationUnavailable")}</p>
+      )}
 
       <div className="mt-6">
         <TagFilter tags={availableTags} selected={tag} onChange={setTag} />
@@ -83,6 +123,8 @@ export function MapExplorer() {
             events={events}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            origin={origin}
+            radiusKm={NEARBY_RADIUS_KM}
           />
         </div>
       </div>
