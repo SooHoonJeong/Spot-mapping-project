@@ -37,6 +37,7 @@ export const translations = {
         "지도에서 이벤트를 살펴보고 핀을 눌러 상세 정보를 확인하세요. 관심사에 맞게 필터링할 수 있습니다.",
       eventsInArea: "등록된 이벤트 {count}개",
       eventsNearby: "내 주변 {radius}km 이벤트 {count}개",
+      eventsInView: "이 지도 영역 이벤트 {count}개",
       locating: "현재 위치를 확인하는 중…",
       locationUnavailable:
         "현재 위치를 가져오지 못해 등록된 모든 이벤트를 보여드려요. 브라우저의 위치 권한을 확인해주세요.",
@@ -387,6 +388,7 @@ export const translations = {
         "Browse events on the map and tap a pin to see the details. Filter by what you're into.",
       eventsInArea: "{count} events listed",
       eventsNearby: "{count} events within {radius}km of you",
+      eventsInView: "{count} events in this map area",
       locating: "Finding your location…",
       locationUnavailable:
         "Couldn't get your location, so all events are shown. Check your browser's location permission.",

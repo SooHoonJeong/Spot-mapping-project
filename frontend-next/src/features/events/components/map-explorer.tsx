@@ -6,7 +6,7 @@ import { MapPin } from "lucide-react";
 import { useEvents } from "../lib/useEvents";
 import { TagFilter } from "./tag-filter";
 import { EventCard } from "./event-card";
-import type { MapOrigin } from "./event-map";
+import type { MapOrigin, MapView } from "./event-map";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 
 function MapLoadingFallback() {
@@ -52,18 +52,42 @@ export function MapExplorer() {
     );
   }, []);
 
-  const { events, totalElements, loading, error } = useEvents(
+  // 사용자가 지도를 옮기면 그때부터는 "지금 보이는 지도 영역"이 조회 기준이 된다(서버는 중심 좌표 +
+  // 반경으로만 검색하므로, 화면을 덮는 원으로 가져온 뒤 화면 안의 것만 목록에 남긴다).
+  const [view, setView] = useState<MapView | null>(null);
+
+  const { events, loading, error } = useEvents(
     {
       tag: tag === "All" ? undefined : tag,
-      lat: origin?.lat,
-      lng: origin?.lng,
-      radius: origin ? NEARBY_RADIUS_KM : undefined,
+      ...(view
+        ? {
+            lat: Number(view.lat.toFixed(5)),
+            lng: Number(view.lng.toFixed(5)),
+            radius: Math.ceil(view.radiusKm * 10) / 10,
+          }
+        : {
+            lat: origin?.lat,
+            lng: origin?.lng,
+            radius: origin ? NEARBY_RADIUS_KM : undefined,
+          }),
       size: 100,
     },
     { enabled: locationStatus !== "locating" },
   );
 
-  const availableTags = Array.from(new Set(events.flatMap((e) => e.tags)));
+  const visibleEvents = view
+    ? events.filter(
+        (e) =>
+          e.latitude != null &&
+          e.longitude != null &&
+          e.latitude >= view.bounds.south &&
+          e.latitude <= view.bounds.north &&
+          e.longitude >= view.bounds.west &&
+          e.longitude <= view.bounds.east,
+      )
+    : events;
+
+  const availableTags = Array.from(new Set(visibleEvents.flatMap((e) => e.tags)));
 
   return (
     <section id="explore" className="mx-auto w-full max-w-7xl px-4 py-8 md:py-10">
@@ -78,9 +102,14 @@ export function MapExplorer() {
         </div>
         <p className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
           <MapPin className="size-4 text-primary" />
-          {origin
-            ? t("mapExplorer.eventsNearby", { radius: NEARBY_RADIUS_KM, count: totalElements })
-            : t("mapExplorer.eventsInArea", { count: totalElements })}
+          {view
+            ? t("mapExplorer.eventsInView", { count: visibleEvents.length })
+            : origin
+              ? t("mapExplorer.eventsNearby", {
+                  radius: NEARBY_RADIUS_KM,
+                  count: visibleEvents.length,
+                })
+              : t("mapExplorer.eventsInArea", { count: visibleEvents.length })}
         </p>
       </div>
 
@@ -103,7 +132,7 @@ export function MapExplorer() {
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1.1fr]">
         <div className="order-2 flex max-h-[640px] flex-col gap-3 overflow-y-auto pr-1 lg:order-1">
-          {events.map((event) => (
+          {visibleEvents.map((event) => (
             <EventCard
               key={event.id}
               event={event}
@@ -111,7 +140,7 @@ export function MapExplorer() {
               onSelect={setSelectedId}
             />
           ))}
-          {!loading && events.length === 0 && (
+          {!loading && visibleEvents.length === 0 && (
             <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
               {t("mapExplorer.emptyState")}
             </p>
@@ -125,6 +154,7 @@ export function MapExplorer() {
             onSelect={setSelectedId}
             origin={origin}
             radiusKm={NEARBY_RADIUS_KM}
+            onViewChange={setView}
           />
         </div>
       </div>

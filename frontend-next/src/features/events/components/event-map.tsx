@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   CircleMarker,
   MapContainer,
@@ -95,13 +95,76 @@ function MapController({
     };
   }, [origin, radiusKm, map]);
 
-  // 위치를 모를 때만: 목록이 바뀌면 보이는 핀들이 한 화면에 들어오도록 맞춘다.
+  // 위치를 모를 때: 처음 불러온 이벤트들이 한 화면에 들어오도록 한 번만 맞춘다. 그 뒤에는 사용자가
+  // 지도를 옮긴 영역 기준으로 목록이 바뀌므로, 목록이 바뀔 때마다 지도를 다시 움직이면 안 된다.
+  const initialFitDone = useRef(false);
   useEffect(() => {
-    if (origin || events.length === 0) return;
+    if (origin || initialFitDone.current || events.length === 0) return;
+    initialFitDone.current = true;
     map.invalidateSize();
     const bounds = L.latLngBounds(events.map((e) => [e.latitude, e.longitude] as [number, number]));
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
   }, [origin, events, map]);
+
+  return null;
+}
+
+export type MapView = {
+  lat: number;
+  lng: number;
+  // 화면 모서리까지의 거리 — 이 반경의 원은 보이는 사각형 영역을 모두 덮는다.
+  radiusKm: number;
+  bounds: { south: number; west: number; north: number; east: number };
+};
+
+// 사용자가 직접 지도를 움직인(드래그/휠/핀치/더블클릭/키보드) 경우에만 보이는 영역을 알려준다.
+// 카드를 눌러 핀으로 이동하거나 처음 5km에 맞추는 것 같은 코드상의 이동은 무시해야, 카드를 누를 때마다
+// 목록이 그 핀 주변으로 줄어들지 않는다.
+const USER_MOVE_WINDOW_MS = 1500;
+
+function ViewReporter({ onViewChange }: { onViewChange: (view: MapView) => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const el = map.getContainer();
+    let lastUserMove = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stamp = () => {
+      lastUserMove = Date.now();
+    };
+
+    const handleMoveEnd = () => {
+      if (Date.now() - lastUserMove > USER_MOVE_WINDOW_MS) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const bounds = map.getBounds();
+        const center = bounds.getCenter();
+        onViewChange({
+          lat: center.lat,
+          lng: center.lng,
+          radiusKm: center.distanceTo(bounds.getNorthEast()) / 1000,
+          bounds: {
+            south: bounds.getSouth(),
+            west: bounds.getWest(),
+            north: bounds.getNorth(),
+            east: bounds.getEast(),
+          },
+        });
+      }, 350);
+    };
+
+    map.on("dragstart drag", stamp);
+    map.on("moveend", handleMoveEnd);
+    const domEvents = ["wheel", "touchmove", "dblclick", "keydown"] as const;
+    domEvents.forEach((name) => el.addEventListener(name, stamp, { passive: true }));
+
+    return () => {
+      clearTimeout(timer);
+      map.off("dragstart drag", stamp);
+      map.off("moveend", handleMoveEnd);
+      domEvents.forEach((name) => el.removeEventListener(name, stamp));
+    };
+  }, [map, onViewChange]);
 
   return null;
 }
@@ -112,12 +175,14 @@ export default function EventMap({
   onSelect,
   origin,
   radiusKm,
+  onViewChange,
 }: {
   events: AppEvent[];
   selectedId: number | null;
   onSelect: (id: number) => void;
   origin: MapOrigin | null;
   radiusKm: number;
+  onViewChange: (view: MapView) => void;
 }) {
   const mappableEvents = events.filter(hasCoords);
 
@@ -139,6 +204,7 @@ export default function EventMap({
         origin={origin}
         radiusKm={radiusKm}
       />
+      <ViewReporter onViewChange={onViewChange} />
       {origin && (
         <CircleMarker
           center={[origin.lat, origin.lng]}
