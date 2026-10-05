@@ -249,18 +249,15 @@ export function Step2Details() {
     syncActiveFormats();
   }
 
-  // 본문에 들어가는 <img>. photoKey를 data 속성으로 남겨서, 나중에 presigned URL(10분 만료)이
-  // 아니라 사진 자체를 가리킬 수 있게 한다.
-  function photoHtml(photo: { url: string; name: string; photoKey?: string }) {
+  function photoHtml(photo: { url: string; name: string }) {
     const img = document.createElement("img");
     img.src = photo.url;
     img.alt = photo.name;
-    if (photo.photoKey) img.dataset.photoKey = photo.photoKey;
     img.style.cssText = "max-width:100%;border-radius:12px;margin:12px 0";
     return img.outerHTML;
   }
 
-  function insertPhoto(photo: { url: string; name: string; photoKey?: string }) {
+  function insertPhoto(photo: { url: string; name: string }) {
     const editor = editorRef.current;
     if (!editor) return;
     editor.focus();
