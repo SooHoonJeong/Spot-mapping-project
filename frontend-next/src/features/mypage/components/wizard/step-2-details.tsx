@@ -146,17 +146,10 @@ export function Step2Details() {
   const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
   const [activeFontFamily, setActiveFontFamily] = useState("");
   const [activeFontSize, setActiveFontSize] = useState("");
-  const [photoPickerOpen, setPhotoPickerOpen] = useState(false);
-  const photoPickerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!photoPickerOpen) return;
-    function handlePointerDown(event: PointerEvent) {
-      if (!photoPickerRef.current?.contains(event.target as Node)) setPhotoPickerOpen(false);
-    }
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [photoPickerOpen]);
+  // 마지막으로 에디터 안에 있던 커서(선택 영역). 사진 목록을 눌러 포커스가 에디터를 벗어나도 "원래
+  // 커서가 있던 자리"에 사진을 넣을 수 있게 기억해둔다.
+  const savedRange = useRef<Range | null>(null);
+  const uploadedPhotos = photos.filter((p) => p.status === "done" && p.photoKey);
 
   // Load the draft description into the editor once on mount — after that the contentEditable
   // div is the source of truth and we only read from it, never rewrite its innerHTML from state
@@ -202,6 +195,7 @@ export function Step2Details() {
     if (!editorRef.current || !selection || selection.rangeCount === 0 || !editorRef.current.contains(selection.anchorNode)) {
       return;
     }
+    savedRange.current = selection.getRangeAt(0).cloneRange();
     const next: Record<string, boolean> = {};
     for (const command of TOGGLE_COMMANDS) {
       next[command] = document.queryCommandState(command);
@@ -255,15 +249,34 @@ export function Step2Details() {
     syncActiveFormats();
   }
 
-  function insertPhoto(url: string, name: string) {
-    editorRef.current?.focus();
-    document.execCommand(
-      "insertHTML",
-      false,
-      `<img src="${url}" alt="${name}" style="max-width:100%;border-radius:12px;margin:12px 0" />`,
-    );
-    setDescription(editorRef.current?.innerHTML ?? "");
-    setPhotoPickerOpen(false);
+  // 본문에 들어가는 <img>. photoKey를 data 속성으로 남겨서, 나중에 presigned URL(10분 만료)이
+  // 아니라 사진 자체를 가리킬 수 있게 한다.
+  function photoHtml(photo: { url: string; name: string; photoKey?: string }) {
+    const img = document.createElement("img");
+    img.src = photo.url;
+    img.alt = photo.name;
+    if (photo.photoKey) img.dataset.photoKey = photo.photoKey;
+    img.style.cssText = "max-width:100%;border-radius:12px;margin:12px 0";
+    return img.outerHTML;
+  }
+
+  function insertPhoto(photo: { url: string; name: string; photoKey?: string }) {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    const selection = window.getSelection();
+    // 지금 에디터 안에 커서가 있으면 그게 가장 정확하다(selectionchange는 비동기라 savedRange가 한
+    // 박자 늦을 수 있다). 포커스가 이미 에디터를 벗어났을 때만 기억해둔 위치로 되돌린다.
+    const hasLiveCaret =
+      !!selection && selection.rangeCount > 0 && editor.contains(selection.anchorNode);
+    const range = savedRange.current;
+    if (!hasLiveCaret && selection && range && editor.contains(range.commonAncestorContainer)) {
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    document.execCommand("insertHTML", false, photoHtml(photo));
+    setDescription(editor.innerHTML);
+    syncActiveFormats();
   }
 
   return (
@@ -324,36 +337,44 @@ export function Step2Details() {
         >
           <Link2 className="size-4" />
         </ToolbarButton>
-        <div className="relative" ref={photoPickerRef}>
-          <ToolbarButton
-            label={t("mypage.create.insertPhoto")}
-            onClick={() => setPhotoPickerOpen((v) => !v)}
-          >
-            <ImageIcon className="size-4" />
-          </ToolbarButton>
-          {photoPickerOpen && (
-            <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-lg border border-border bg-card p-2 shadow-lg">
-              {photos.length > 0 ? (
-                <div className="grid grid-cols-3 gap-1.5">
-                  {photos.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => insertPhoto(p.url, p.name)}
-                      className="aspect-square overflow-hidden rounded-md border border-border hover:border-primary"
-                    >
-                      <img src={p.url} alt={p.name} className="size-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="p-2 text-xs text-muted-foreground">
-                  {t("mypage.create.insertPhotoEmpty")}
-                </p>
-              )}
+      </div>
+      {/* 1단계에서 올려둔 사진 — 누르면 본문의 커서 위치에 들어가고, 끌어다 원하는 자리에 놓을 수도 있다. */}
+      <div className="flex flex-col gap-2 border border-b-0 border-border bg-secondary/30 px-3 py-2.5">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <ImageIcon className="size-3.5" />
+          {t("mypage.create.insertPhoto")}
+        </p>
+        {uploadedPhotos.length > 0 ? (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {uploadedPhotos.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  title={p.name}
+                  // 마우스를 눌러도 에디터의 커서/포커스가 사라지지 않게 한다.
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => insertPhoto(p)}
+                  className="size-16 overflow-hidden rounded-lg border border-border transition hover:border-primary hover:ring-2 hover:ring-primary/30"
+                >
+                  <img
+                    src={p.url}
+                    alt={p.name}
+                    draggable
+                    onDragStart={(event) => {
+                      event.dataTransfer.setData("text/html", photoHtml(p));
+                      event.dataTransfer.effectAllowed = "copy";
+                    }}
+                    className="size-full object-cover"
+                  />
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+            <p className="text-xs text-muted-foreground">{t("mypage.create.insertPhotoHint")}</p>
+          </>
+        ) : (
+          <p className="text-xs text-muted-foreground">{t("mypage.create.insertPhotoEmpty")}</p>
+        )}
       </div>
       <div
         id="event-description"
@@ -361,8 +382,14 @@ export function Step2Details() {
         contentEditable
         suppressContentEditableWarning
         onInput={(event) => setDescription(event.currentTarget.innerHTML)}
+        onBlur={() => {
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0 && editorRef.current?.contains(selection.anchorNode)) {
+            savedRange.current = selection.getRangeAt(0).cloneRange();
+          }
+        }}
         data-placeholder={t("mypage.create.descriptionPlaceholder")}
-        className="min-h-56 w-full rounded-b-xl border border-t-0 border-border bg-background p-4 text-sm leading-relaxed outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)] focus:border-primary focus:ring-2 focus:ring-primary/30"
+        className="min-h-56 w-full rounded-b-xl border border-t-0 border-border bg-background p-4 text-sm leading-relaxed outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)] focus:border-primary focus:ring-2 focus:ring-primary/30 [&_img]:max-w-full"
       />
     </div>
   );
