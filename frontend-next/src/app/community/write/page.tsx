@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageShell } from "@/components/page-shell";
+import { RequireLogin } from "@/features/auth/components/RequireLogin";
 import { CommunityWriteBackLink } from "@/features/community/components/community-write-back-link";
 import { CommunityPostForm } from "@/features/community/components/community-post-form";
 
@@ -11,8 +12,10 @@ export const metadata: Metadata = {
 export default function CommunityWritePage() {
   return (
     <PageShell>
-      <CommunityWriteBackLink />
-      <CommunityPostForm />
+      <RequireLogin next="/community/write">
+        <CommunityWriteBackLink />
+        <CommunityPostForm />
+      </RequireLogin>
     </PageShell>
   );
 }
