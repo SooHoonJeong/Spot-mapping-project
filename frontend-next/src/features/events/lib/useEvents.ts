@@ -47,15 +47,17 @@ export function useEvents(params: EventListParams, { enabled = true } = {}) {
 export function useInfiniteEvents(params: Omit<EventListParams, "page">) {
   const [events, setEvents] = useState<AppEvent[]>([]);
   const [totalElements, setTotalElements] = useState(0);
-  const [page, setPage] = useState(0);
   const [hasNext, setHasNext] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const key = JSON.stringify(params);
+  // 페이지를 "어떤 필터에서의 몇 페이지인지"로 같이 들고 있어서, 필터가 바뀌는 순간 곧바로 0페이지로
+  // 취급된다(별도 effect로 되돌리면 옛 페이지 번호로 요청이 한 번 더 나간다).
+  const [pageState, setPageState] = useState({ key, page: 0 });
+  const page = pageState.key === key ? pageState.page : 0;
 
   useEffect(() => {
     setEvents([]);
-    setPage(0);
   }, [key]);
 
   useEffect(() => {
@@ -84,7 +86,7 @@ export function useInfiniteEvents(params: Omit<EventListParams, "page">) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, page]);
 
-  const loadMore = useCallback(() => setPage((p) => p + 1), []);
+  const loadMore = useCallback(() => setPageState({ key, page: page + 1 }), [key, page]);
 
   return { events, totalElements, hasNext, loading, error, loadMore };
 }

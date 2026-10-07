@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import {
   AlertCircle,
   CalendarClock,
@@ -11,6 +11,7 @@ import {
   Star,
   X,
 } from "lucide-react";
+import { TagInput } from "@/components/tag-input";
 import { useEventDraftStore } from "@/stores/useEventDraftStore";
 import { photosService } from "@/features/events/services/photosService";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
@@ -40,19 +41,7 @@ export function Step1Setup() {
   const updatePhoto = useEventDraftStore((s) => s.updatePhoto);
   const setMainPhoto = useEventDraftStore((s) => s.setMainPhoto);
 
-  const [tagInput, setTagInput] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
-
-  function commitTagInput() {
-    const value = tagInput.trim();
-    if (!value) return;
-    setTags((prev) => (prev.includes(value) ? prev : [...prev, value]));
-    setTagInput("");
-  }
-
-  function removeTag(tag: string) {
-    setTags((prev) => prev.filter((t) => t !== tag));
-  }
 
   function uploadPhoto(id: string, file: File) {
     photosService
@@ -168,39 +157,12 @@ export function Step1Setup() {
         <label htmlFor="tags" className={labelClass}>
           {t("mypage.create.tagsLabel")}
         </label>
-        <input
+        <TagInput
           id="tags"
-          value={tagInput}
-          onChange={(e) => setTagInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.nativeEvent.isComposing && e.keyCode !== 229) {
-              e.preventDefault();
-              commitTagInput();
-            }
-          }}
+          tags={tags}
+          onChange={setTags}
           placeholder={t("mypage.create.tagsPlaceholder")}
-          className={fieldClass}
         />
-        {tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
-              >
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => removeTag(tag)}
-                  aria-label={t("mypage.create.tagRemove", { tag })}
-                  className="hover:text-destructive"
-                >
-                  <X className="size-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
       </div>
 
       {format === "OFFLINE" && (

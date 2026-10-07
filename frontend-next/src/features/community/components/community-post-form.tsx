@@ -19,11 +19,22 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TagInput } from "@/components/tag-input";
 import { useEvents } from "@/features/events/lib/useEvents";
+import { usePostCategories } from "../lib/usePosts";
+import { communityService } from "../services/communityService";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 
 type Mode = "quick" | "detailed";
 type MediaPreview = { url: string; type: "image" | "video"; name: string };
+
+// 이벤트 태그(글에 이벤트를 연결하는 기능)는 백엔드 속성이 정해질 때까지 코드만 남겨두고 사용을 막아둔다.
+// 서버에 보내는 값(categoryId/title/content)과는 별개이며, 켜려면 true로 바꾸면 된다.
+const EVENT_TAG_ENABLED = false;
+// 게시글 자체의 태그도 POST /api/posts에 속성이 생길 때까지 입력을 막아둔다.
+const POST_TAG_ENABLED = false;
+// 사진/영상 첨부도 게시물용 업로드 API가 나올 때까지 막아둔다. 지금 고른 파일은 서버에 올라가지 않는다.
+const MEDIA_UPLOAD_ENABLED = false;
 
 const FONT_FAMILIES: { value: string; labelKey: string }[] = [
   { value: "'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif", labelKey: "toolbarFontSans" },
@@ -54,11 +65,13 @@ function ToolbarButton({
   label,
   onClick,
   active = false,
+  disabled = false,
   children,
 }: {
   label: string;
   onClick: () => void;
   active?: boolean;
+  disabled?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -67,9 +80,10 @@ function ToolbarButton({
       title={label}
       aria-label={label}
       aria-pressed={active}
+      disabled={disabled}
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
-      className={`inline-flex size-9 items-center justify-center rounded-lg transition-colors ${
+      className={`inline-flex size-9 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
         active
           ? "bg-primary/15 text-primary"
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -168,6 +182,16 @@ export function CommunityPostForm() {
   const [content, setContent] = useState("");
   const [media, setMedia] = useState<MediaPreview[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
+  // 게시글 자체의 태그(해시태그). 위의 `tags`는 "글에 연결할 이벤트"라 서로 다른 값이다.
+  const [postTags, setPostTags] = useState<string[]>([]);
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const {
+    categories,
+    loading: categoriesLoading,
+    error: categoriesError,
+  } = usePostCategories();
   const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
   const [activeFontFamily, setActiveFontFamily] = useState("");
   const [activeFontSize, setActiveFontSize] = useState("");
@@ -188,11 +212,19 @@ export function CommunityPostForm() {
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [isTagSearchOpen]);
 
-  // 이벤트 태그 검색은 목업 목록 대신 실제 GET /api/events(keyword)를 사용
-  const { events: tagResults } = useEvents({
-    keyword: debouncedTagQuery || undefined,
-    size: 8,
-  });
+  // 이벤트 태그 검색은 목업 목록 대신 실제 GET /api/events(keyword)를 사용 (지금은 비활성)
+  const { events: tagResults } = useEvents(
+    {
+      keyword: debouncedTagQuery || undefined,
+      size: 8,
+    },
+    { enabled: EVENT_TAG_ENABLED },
+  );
+
+  // 카테고리를 처음 불러오면 첫 번째를 기본 선택해서, 사용자가 안 골라도 게시할 수 있게 한다.
+  useEffect(() => {
+    if (categoryId === null && categories.length > 0) setCategoryId(categories[0].id);
+  }, [categories, categoryId]);
 
   // wrapSelectionWithStyle이 새로 감싼 span의 내용 전체를 다시 선택해두기 때문에, 선택 시작
   // 지점(anchorNode/startContainer)이 실제 텍스트가 아니라 그 span 자신(오프셋 0)을 가리키는
@@ -311,10 +343,16 @@ export function CommunityPostForm() {
   }
 
   function insertMedia(file: File) {
+    if (!MEDIA_UPLOAD_ENABLED) return;
     const url = URL.createObjectURL(file);
     const type = file.type.startsWith("video/") ? "video" : "image";
-    setMedia((items) => [...items, { url, type, name: file.name }]);
-    if (mode === "detailed" && editorRef.current) {
+    // 빠른 작성: 본문 없이 첨부 목록(썸네일)에만 쌓는다. 자세히 작성: 본문에만 넣는다 — 같이 쌓으면
+    // 같은 사진이 본문과 아래 목록에 두 번 보인다.
+    if (mode === "quick") {
+      setMedia((items) => [...items, { url, type, name: file.name }]);
+      return;
+    }
+    if (editorRef.current) {
       editorRef.current.focus();
       document.execCommand(
         "insertHTML",
@@ -346,13 +384,29 @@ export function CommunityPostForm() {
     setTagQuery("");
   }
 
-  // TODO: mock — 커뮤니티 글 작성 API가 아직 없어서 실제로 게시글을 만들지 않고 성공 화면만 보여준 뒤
-  // 피드로 돌아감. 백엔드에 커뮤니티 도메인이 추가되면 실제 POST 요청으로 교체해야 함.
-  function submit(event: React.FormEvent) {
+  // 사진/영상 업로드 API가 아직 없어서, 지금 고른 파일은 브라우저 안에서만 열리는 blob: 주소다. 이걸
+  // 담아 게시하면 다른 사람에게는 전부 깨지므로, 사진이 들어간 글은 업로드가 붙을 때까지 게시하지 못하게 막는다.
+  const hasLocalMedia =
+    media.length > 0 || /<(?:img|video)\b[^>]*\ssrc="blob:/i.test(content);
+  const hasContent = !!title.trim() && !!content.replace(/<[^>]*>/g, "").trim();
+  const canSubmit = hasContent && categoryId !== null && !hasLocalMedia && !submitting;
+
+  // POST /api/posts는 {categoryId, title, content}만 받는다. 게시글 태그(postTags)와 이벤트 태그(tags)는
+  // 아직 서버 속성이 없어서 보내지 않는다.
+  async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!title.trim() || !content.replace(/<[^>]*>/g, "").trim()) return;
-    setSubmitted(true);
-    window.setTimeout(() => router.push("/community"), 900);
+    if (!canSubmit || categoryId === null) return;
+    setSubmitError(false);
+    setSubmitting(true);
+    try {
+      await communityService.createPost({ categoryId, title: title.trim(), content });
+      setSubmitted(true);
+      window.setTimeout(() => router.push("/community"), 900);
+    } catch {
+      setSubmitError(true);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (submitted) {
@@ -403,6 +457,35 @@ export function CommunityPostForm() {
           </div>
         </div>
 
+        <div className="mb-5">
+          <span className="text-sm font-semibold">{t("community.writePage.categoryLabel")}</span>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setCategoryId(category.id)}
+                aria-pressed={categoryId === category.id}
+                className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  categoryId === category.id
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
+            {categoriesLoading && (
+              <span className="text-xs text-muted-foreground">{t("community.loading")}</span>
+            )}
+            {categoriesError && (
+              <span className="text-xs text-destructive">
+                {t("community.writePage.categoryLoadError")}
+              </span>
+            )}
+          </div>
+        </div>
+
         <div className="grid gap-5 sm:grid-cols-[1fr_260px]">
           <div>
             <label htmlFor="post-title" className="text-sm font-semibold">
@@ -424,10 +507,16 @@ export function CommunityPostForm() {
               <span className="font-normal text-muted-foreground">
                 {t("community.writePage.tagOptional")}
               </span>
+              {!EVENT_TAG_ENABLED && (
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  {t("community.writePage.tagComingSoon")}
+                </span>
+              )}
             </label>
             <div className="relative mt-2">
               <input
                 id="event-tag-search"
+                disabled={!EVENT_TAG_ENABLED}
                 value={tagQuery}
                 onFocus={() => setIsTagSearchOpen(true)}
                 onChange={(e) => {
@@ -435,7 +524,7 @@ export function CommunityPostForm() {
                   setIsTagSearchOpen(true);
                 }}
                 placeholder={t("community.writePage.tagSearchPlaceholder")}
-                className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-describedby="event-tag-help"
                 aria-controls="event-tag-results"
                 autoComplete="off"
@@ -470,7 +559,7 @@ export function CommunityPostForm() {
                 ))}
               </div>
             )}
-            {isTagSearchOpen && (
+            {EVENT_TAG_ENABLED && isTagSearchOpen && (
               <div
                 id="event-tag-results"
                 role="listbox"
@@ -510,6 +599,26 @@ export function CommunityPostForm() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <label htmlFor="post-tags" className="flex items-center gap-2 text-sm font-semibold">
+            {t("mypage.create.tagsLabel")}
+            {!POST_TAG_ENABLED && (
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                {t("community.writePage.tagComingSoon")}
+              </span>
+            )}
+          </label>
+          <div className="mt-2">
+            <TagInput
+              id="post-tags"
+              tags={postTags}
+              onChange={setPostTags}
+              placeholder={t("mypage.create.tagsPlaceholder")}
+              disabled={!POST_TAG_ENABLED}
+            />
           </div>
         </div>
 
@@ -602,8 +711,13 @@ export function CommunityPostForm() {
                 <Link2 className="size-4" />
               </ToolbarButton>
               <ToolbarButton
-                label={t("community.writePage.toolbarMedia")}
+                label={
+                  MEDIA_UPLOAD_ENABLED
+                    ? t("community.writePage.toolbarMedia")
+                    : `${t("community.writePage.toolbarMedia")} (${t("community.writePage.mediaComingSoon")})`
+                }
                 onClick={() => mediaInputRef.current?.click()}
+                disabled={!MEDIA_UPLOAD_ENABLED}
               >
                 <Paperclip className="size-4" />
               </ToolbarButton>
@@ -629,18 +743,25 @@ export function CommunityPostForm() {
         {mode === "quick" && (
           <div className="mt-6">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">
-                {t("community.writePage.mediaLabel")}{" "}
-                <span className="font-normal text-muted-foreground">
-                  {t("community.writePage.mediaMax")}
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <span>
+                  {t("community.writePage.mediaLabel")}{" "}
+                  <span className="font-normal text-muted-foreground">
+                    {t("community.writePage.mediaMax")}
+                  </span>
                 </span>
+                {!MEDIA_UPLOAD_ENABLED && (
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    {t("community.writePage.mediaComingSoon")}
+                  </span>
+                )}
               </span>
               <Button
                 type="button"
                 variant="secondary"
                 className="gap-2"
                 onClick={() => mediaInputRef.current?.click()}
-                disabled={media.length >= 4}
+                disabled={!MEDIA_UPLOAD_ENABLED || media.length >= 4}
               >
                 <ImagePlus className="size-4" />
                 {t("community.writePage.addMedia")}
@@ -655,11 +776,12 @@ export function CommunityPostForm() {
           multiple
           className="sr-only"
           onChange={(e) => {
-            Array.from(e.target.files ?? []).slice(0, 4 - media.length).forEach(insertMedia);
+            const files = Array.from(e.target.files ?? []);
+            (mode === "quick" ? files.slice(0, 4 - media.length) : files).forEach(insertMedia);
             e.target.value = "";
           }}
         />
-        {media.length > 0 && (
+        {mode === "quick" && media.length > 0 && (
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {media.map((item, index) => (
               <div
@@ -683,12 +805,22 @@ export function CommunityPostForm() {
             ))}
           </div>
         )}
+        {hasLocalMedia && (
+          <p className="mt-4 rounded-xl border border-border bg-secondary/50 px-4 py-2.5 text-xs text-muted-foreground">
+            {t("community.writePage.mediaNotReady")}
+          </p>
+        )}
+        {submitError && (
+          <p className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+            {t("community.writePage.publishError")}
+          </p>
+        )}
         <div className="mt-8 flex justify-end gap-3 border-t border-border pt-5">
           <Button type="button" variant="ghost" nativeButton={false} render={<Link href="/community" />}>
             {t("community.writePage.cancel")}
           </Button>
-          <Button type="submit" disabled={!title.trim() || !content.replace(/<[^>]*>/g, "").trim()}>
-            {t("community.writePage.publish")}
+          <Button type="submit" disabled={!canSubmit}>
+            {submitting ? t("community.writePage.publishing") : t("community.writePage.publish")}
           </Button>
         </div>
       </div>

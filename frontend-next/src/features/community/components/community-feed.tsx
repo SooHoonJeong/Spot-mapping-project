@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Share2, Tag, Image as ImageIcon } from "lucide-react";
+import { Tag, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { COMMUNITY_POSTS, type CommunityPost } from "../lib/community";
+import { cn } from "@/lib/utils";
+import { formatStartAt, htmlToPlainText } from "@/features/events/lib/format";
+import { useInfinitePosts, usePostCategories } from "../lib/usePosts";
+import type { Post } from "../services/communityService";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 
 function initials(name: string) {
@@ -16,40 +19,22 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-function PostCard({
-  post,
-  liked,
-  onToggleLike,
-}: {
-  post: CommunityPost;
-  liked: boolean;
-  onToggleLike: (id: string) => void;
-}) {
-  const { t } = useTranslation();
-  const media = post.media?.[0];
+// 본문 HTML에 사진이 들어 있으면 첫 장을 카드 썸네일로 쓴다. 게시글 응답에는 별도 이미지 필드가 없다.
+function firstImageUrl(html: string): string | null {
+  const match = /<img\b[^>]*\ssrc="(https?:\/\/[^"]+)"/i.exec(html);
+  return match ? match[1] : null;
+}
+
+function PostCard({ post }: { post: Post }) {
+  const thumbnail = firstImageUrl(post.content);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <div className="flex flex-col sm:flex-row">
-        {media ? (
+        {thumbnail ? (
           <div className="w-full shrink-0 bg-card p-3 sm:w-40 md:w-48">
             <div className="relative aspect-square w-full overflow-hidden rounded-xl">
-              {media.type === "video" ? (
-                <video
-                  src={media.url}
-                  muted
-                  playsInline
-                  className="size-full object-cover"
-                  aria-label={media.name}
-                />
-              ) : (
-                <img src={media.url} alt={media.name} className="size-full object-cover" />
-              )}
-              {post.media && post.media.length > 1 && (
-                <span className="absolute bottom-2 right-2 rounded-full bg-foreground/75 px-2 py-1 text-xs text-background">
-                  +{post.media.length - 1}
-                </span>
-              )}
+              <img src={thumbnail} alt={post.title} className="size-full object-cover" />
             </div>
           </div>
         ) : (
@@ -60,62 +45,28 @@ function PostCard({
         <div className="min-w-0 flex-1 p-5">
           <div className="flex items-center gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
-              {initials(post.author)}
+              {initials(post.nickname)}
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-card-foreground">
-                {post.author}
+                {post.nickname}
               </p>
               <p className="truncate text-xs text-muted-foreground">
-                @{post.handle} · {post.timeAgo}
+                {formatStartAt(post.createdAt)}
               </p>
             </div>
           </div>
 
-          {post.title && (
-            <h2 className="mt-4 text-base font-semibold text-card-foreground">
-              {post.title}
-            </h2>
-          )}
+          <h2 className="mt-4 text-base font-semibold text-card-foreground">{post.title}</h2>
 
-          <p className="mt-3 text-pretty text-sm leading-relaxed text-card-foreground">
-            {post.content}
+          <p className="mt-3 line-clamp-3 text-pretty text-sm leading-relaxed text-card-foreground">
+            {htmlToPlainText(post.content)}
           </p>
 
-          {post.tag && (
-            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
-              <Tag className="size-3 text-primary" />
-              {post.tag}
-            </span>
-          )}
-
-          <div className="mt-4 flex items-center gap-6 border-t border-border pt-3 text-sm text-muted-foreground">
-            <button
-              type="button"
-              onClick={() => onToggleLike(post.id)}
-              className="flex items-center gap-1.5 hover:text-primary"
-              aria-label={t("community.likeAria", { author: post.author })}
-              aria-pressed={liked}
-            >
-              <Heart
-                className={
-                  liked ? "size-4 fill-primary text-primary" : "size-4"
-                }
-              />
-              {post.likes + (liked ? 1 : 0)}
-            </button>
-            <span className="flex items-center gap-1.5">
-              <MessageCircle className="size-4" />
-              {post.comments}
-            </span>
-            <button
-              type="button"
-              className="ml-auto flex items-center gap-1.5 hover:text-primary"
-            >
-              <Share2 className="size-4" />
-              {t("community.share")}
-            </button>
-          </div>
+          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+            <Tag className="size-3 text-primary" />
+            {post.categoryName}
+          </span>
         </div>
       </div>
     </article>
@@ -124,11 +75,9 @@ function PostCard({
 
 export function CommunityFeed() {
   const { t } = useTranslation();
-  const [posts] = useState<CommunityPost[]>(COMMUNITY_POSTS);
-  const [liked, setLiked] = useState<Record<string, boolean>>({});
-
-  const toggleLike = (id: string) =>
-    setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const { categories } = usePostCategories();
+  const { posts, hasNext, loading, error, loadMore } = useInfinitePosts(categoryId);
 
   return (
     <section className="mx-auto grid w-full max-w-3xl gap-4 px-4 py-8">
@@ -148,16 +97,58 @@ export function CommunityFeed() {
         </Button>
       </div>
 
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {[{ id: undefined, name: t("community.categoryAll") }, ...categories].map((category) => {
+            const active = category.id === categoryId;
+            return (
+              <button
+                key={category.id ?? "all"}
+                type="button"
+                onClick={() => setCategoryId(category.id)}
+                aria-pressed={active}
+                className={cn(
+                  "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                )}
+              >
+                {category.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {error && (
+        <p className="rounded-2xl border border-dashed border-destructive/40 p-6 text-center text-sm text-destructive">
+          {t("community.errorState")}
+        </p>
+      )}
+
       <div className="flex flex-col gap-4">
         {posts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            liked={!!liked[post.id]}
-            onToggleLike={toggleLike}
-          />
+          <PostCard key={post.id} post={post} />
         ))}
       </div>
+
+      {loading && posts.length === 0 && (
+        <p className="text-center text-sm text-muted-foreground">{t("community.loading")}</p>
+      )}
+      {!loading && !error && posts.length === 0 && (
+        <p className="rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground">
+          {t("community.emptyState")}
+        </p>
+      )}
+
+      {hasNext && (
+        <div className="flex justify-center">
+          <Button type="button" variant="outline" onClick={loadMore} disabled={loading}>
+            {loading ? t("community.loading") : t("community.loadMore")}
+          </Button>
+        </div>
+      )}
     </section>
   );
 }
