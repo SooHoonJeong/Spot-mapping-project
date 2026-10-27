@@ -12,6 +12,14 @@ export const translations = {
       logout: "로그아웃",
       greeting: "{nickname}님",
       guestNickname: "사용자",
+      admin: "관리자",
+    },
+    admin: {
+      title: "관리자",
+      description: "관리자 기능은 준비 중입니다.",
+      forbiddenTitle: "권한이 없습니다.",
+      forbiddenDescription: "관리자만 접근할 수 있는 페이지입니다. 잠시 후 메인 페이지로 이동합니다.",
+      goHome: "메인으로 이동",
     },
     footer: {
       language: "언어",
@@ -377,6 +385,15 @@ export const translations = {
       logout: "Log Out",
       greeting: "{nickname}",
       guestNickname: "User",
+      admin: "Admin",
+    },
+    admin: {
+      title: "Admin",
+      description: "Admin features are coming soon.",
+      forbiddenTitle: "You don't have permission.",
+      forbiddenDescription:
+        "This page is for administrators only. You'll be redirected to the home page shortly.",
+      goHome: "Go to home",
     },
     footer: {
       language: "Language",

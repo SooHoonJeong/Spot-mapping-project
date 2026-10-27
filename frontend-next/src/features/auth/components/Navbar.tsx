@@ -7,6 +7,7 @@ import { MapPin, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "../../../stores/useAuthStore";
+import { useIsAdmin } from "../lib/useIsAdmin";
 import { useTranslation } from "@/lib/i18n/LanguageProvider";
 
 export default function Navbar() {
@@ -15,12 +16,14 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { user, isLoggedIn, logout } = useAuthStore();
   const { t } = useTranslation();
+  const isAdmin = useIsAdmin();
 
   const NAV_LINKS = [
     { href: "/events", label: t("nav.events") },
     { href: "/map", label: t("nav.map") },
     { href: "/community", label: t("nav.community") },
     { href: "/my-page", label: t("nav.myPage") },
+    ...(isAdmin ? [{ href: "/admin", label: t("nav.admin") }] : []),
   ];
 
   const isActive = (href: string) =>
